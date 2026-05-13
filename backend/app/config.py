@@ -1,0 +1,45 @@
+"""
+Aivaan Edge Server Configuration
+All settings for the local FastAPI server that bridges the mobile app to Ollama.
+"""
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+from typing import List
+
+
+class Settings(BaseSettings):
+    """
+    Configuration for the Aivaan edge server.
+    All values are designed for fully offline operation.
+    """
+    # --- Server ---
+    APP_NAME: str = "Aivaan Edge Server"
+    APP_VERSION: str = "1.0.0"
+    HOST: str = "0.0.0.0"  # Listen on all interfaces so phone can reach us
+    PORT: int = 8000
+    DEBUG: bool = True
+
+    # --- Ollama (Local AI) ---
+    OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
+    OLLAMA_MODEL: str = "gemma4:latest"  # Gemma 4 E4B via Ollama
+    OLLAMA_TIMEOUT: int = 120  # seconds — generous for CPU inference
+
+    # --- Whisper (Local STT) ---
+    WHISPER_MODEL_SIZE: str = "small"  # Options: tiny, base, small, medium
+    WHISPER_DEVICE: str = "cpu"
+    WHISPER_COMPUTE_TYPE: str = "int8"  # Fastest on CPU
+
+    # --- Database (Local SQLite) ---
+    DATABASE_URL: str = "sqlite:///./aivaan.db"
+
+    # --- Supported Languages ---
+    SUPPORTED_LANGUAGES: List[str] = ["en", "hi", "ta", "te", "bn", "kn"]
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()

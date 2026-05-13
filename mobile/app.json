@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Aivaan",
+    "slug": "aivaan",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "aivaan",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F1419"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aivaan.healthapp"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0F1419"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.aivaan.healthapp",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Aivaan needs camera access to scan medical documents and food."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Aivaan needs photo access to analyze medical documents."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

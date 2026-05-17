@@ -3,10 +3,10 @@
  * Handles all communication between the mobile app and the local FastAPI server.
  * The server IP is discovered via QR code scan and stored in AsyncStorage.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { generateLLMResponse } from './llm';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { generateLLMResponse } from "./llm";
 
-const STORAGE_KEY_SERVER_URL = '@aivaan_server_url';
+const STORAGE_KEY_SERVER_URL = "@sobahealth_server_url";
 
 // Singleton state
 let _serverUrl: string | null = null;
@@ -46,10 +46,10 @@ export function parseQrData(data: string): string | null {
     if (parsed.host && parsed.port) {
       return `http://${parsed.host}:${parsed.port}`;
     }
-    if (data.startsWith('http')) return data;
+    if (data.startsWith("http")) return data;
     return null;
   } catch {
-    if (data.startsWith('http')) return data;
+    if (data.startsWith("http")) return data;
     return null;
   }
 }
@@ -64,7 +64,7 @@ export async function testConnection(url?: string): Promise<{
 }> {
   const serverUrl = url || (await getServerUrl());
   if (!serverUrl) {
-    return { connected: false, error: 'No server URL configured' };
+    return { connected: false, error: "No server URL configured" };
   }
 
   try {
@@ -82,74 +82,140 @@ export async function testConnection(url?: string): Promise<{
     }
     return { connected: false, error: `Server returned ${response.status}` };
   } catch (e: any) {
-    return { connected: false, error: e.message || 'Connection failed' };
+    return { connected: false, error: e.message || "Connection failed" };
   }
 }
 
 // =============================================================================
-// API Methods — ON-DEVICE LLM
+// API Methods — EDGE SERVER LLM (With Local SQLite RAG)
 // =============================================================================
 
+import { getUserProfile, getHealthRecords } from "./database";
+
 /**
- * Send a chat message to the AI health assistant using the on-device model.
+ * Builds the RAG context from the user's local SQLite profile and health records.
+ */
+async function buildRagContext(): Promise<string> {
+  try {
+    const profile = await getUserProfile();
+    const records = await getHealthRecords();
+
+    if (!profile) return "";
+
+    let context = `[PATIENT CONTEXT (DO NOT REPEAT TO USER)]\n`;
+    context += `Name: ${profile.name}, Age: ${profile.age}, Gender: ${profile.gender}, Blood: ${profile.blood_group}\n`;
+
+    try {
+      const conditions = JSON.parse(profile.conditions);
+      if (conditions.length > 0)
+        context += `Medical Conditions: ${conditions.join(", ")}\n`;
+    } catch (e) {}
+
+    try {
+      const allergies = JSON.parse(profile.allergies);
+      if (allergies.length > 0)
+        context += `Allergies: ${allergies.join(", ")}\n`;
+    } catch (e) {}
+
+    if (records && records.length > 0) {
+      context += `\nRecent Health Records:\n`;
+      // Take up to 3 most recent records for context
+      records.slice(0, 3).forEach((r) => {
+        context += `- [${new Date(r.created_at).toISOString().split("T")[0]} - ${r.type.toUpperCase()}] ${r.summary}\n`;
+      });
+    }
+
+    context += `[/PATIENT CONTEXT]\n\n`;
+    return context;
+  } catch (e) {
+    console.warn("Failed to build RAG context:", e);
+    return "";
+  }
+}
+
+/**
+ * Send a chat message to the AI health assistant running on the Edge Server.
  */
 export async function sendChatMessage(
   messages: Array<{ role: string; content: string }>,
-  language: string = 'en'
+  language: string = "en",
 ): Promise<{ response: string; language: string }> {
-  // Construct Gemma instruction-tuned prompt
-  let prompt = '';
-  for (const m of messages) {
-    prompt += `<start_of_turn>${m.role}\n${m.content}<end_of_turn>\n`;
-  }
-  prompt += `<start_of_turn>model\nRespond primarily in ${language}:\n`;
+  const serverUrl = await getServerUrl();
+  if (!serverUrl) throw new Error("Not connected to server");
 
-  const responseText = await generateLLMResponse(prompt);
-  return { response: responseText.trim(), language };
+  const ragContext = await buildRagContext();
+
+  // Clone messages and inject context into the first message or append as system
+  const payloadMessages = [...messages];
+  if (payloadMessages.length > 0) {
+    payloadMessages[0].content = ragContext + payloadMessages[0].content;
+  } else {
+    payloadMessages.push({ role: "user", content: ragContext + "Hello" });
+  }
+
+  const res = await fetch(`${serverUrl}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: payloadMessages,
+      language,
+      stream: false,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Chat failed: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return { response: data.response, language: data.language };
 }
 
 /**
- * Check symptoms and get risk assessment using the on-device model.
+ * Check symptoms and get risk assessment using the Edge Server model.
  */
 export async function checkSymptoms(
   messages: Array<{ role: string; content: string }>,
-  language: string = 'en'
-): Promise<{ response: string; urgency: string; reasoning?: string; extracted_data?: any }> {
-  // Construct prompt forcing JSON output for structured symptom triage
-  let prompt = '';
-  for (const m of messages) {
-    prompt += `<start_of_turn>${m.role}\n${m.content}<end_of_turn>\n`;
-  }
-  prompt += `<start_of_turn>model\n`;
-  prompt += `Analyze the symptoms. Output MUST be valid JSON with keys: "response" (friendly message to user asking follow ups or giving advice), "urgency" ("emergency", "see_doctor", or "self_care"), "reasoning" (your logic chain), and "extracted_data" (primary and associated symptoms). Respond in ${language}.\n`;
+  language: string = "en",
+): Promise<{
+  response: string;
+  urgency: string;
+  reasoning?: string;
+  extracted_data?: any;
+}> {
+  const serverUrl = await getServerUrl();
+  if (!serverUrl) throw new Error("Not connected to server");
 
-  try {
-    const rawResponse = await generateLLMResponse(prompt);
-    
-    // Extract JSON from LLM output block
-    const jsonStart = rawResponse.indexOf('{');
-    const jsonEnd = rawResponse.lastIndexOf('}') + 1;
-    if (jsonStart !== -1 && jsonEnd !== -1) {
-      const jsonStr = rawResponse.substring(jsonStart, jsonEnd);
-      const parsed = JSON.parse(jsonStr);
-      return {
-        response: parsed.response || 'Please provide more details about how you are feeling.',
-        urgency: parsed.urgency || 'unknown',
-        reasoning: parsed.reasoning || rawResponse,
-        extracted_data: parsed.extracted_data || {}
-      };
-    } else {
-      // Fallback if LLM fails to structure JSON
-      return { 
-        response: rawResponse, 
-        urgency: 'unknown', 
-        reasoning: 'Failed to format JSON logic.', 
-        extracted_data: {} 
-      };
-    }
-  } catch (err: any) {
-    throw new Error(err.message || 'Symptom check failed to analyze via local LLM.');
+  const ragContext = await buildRagContext();
+
+  const payloadMessages = [...messages];
+  if (payloadMessages.length > 0) {
+    payloadMessages[0].content = ragContext + payloadMessages[0].content;
   }
+
+  const res = await fetch(`${serverUrl}/api/symptom-check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: payloadMessages,
+      language,
+      use_thinking: true,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Symptom check failed: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return {
+    response: data.response,
+    urgency: data.urgency,
+    reasoning: data.thinking,
+    extracted_data: { risk_flags: data.risk_flags },
+  };
 }
 
 // =============================================================================
@@ -161,23 +227,23 @@ export async function checkSymptoms(
  */
 export async function transcribeAudio(
   audioUri: string,
-  language?: string
+  language?: string,
 ): Promise<{ transcript: string; detected_language: string }> {
   const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error('Not connected to server');
+  if (!serverUrl) throw new Error("Not connected to server");
 
   const formData = new FormData();
-  formData.append('audio', {
+  formData.append("audio", {
     uri: audioUri,
-    type: 'audio/m4a',
-    name: 'recording.m4a',
+    type: "audio/m4a",
+    name: "recording.m4a",
   } as any);
   if (language) {
-    formData.append('language', language);
+    formData.append("language", language);
   }
 
   const res = await fetch(`${serverUrl}/api/transcribe`, {
-    method: 'POST',
+    method: "POST",
     body: formData,
   });
 
@@ -194,21 +260,21 @@ export async function transcribeAudio(
  */
 export async function extractDocument(
   imageUri: string,
-  language: string = 'en'
+  language: string = "en",
 ): Promise<{ extracted_data: any; summary: string }> {
   const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error('Not connected to server');
+  if (!serverUrl) throw new Error("Not connected to server");
 
   const formData = new FormData();
-  formData.append('image', {
+  formData.append("image", {
     uri: imageUri,
-    type: 'image/jpeg',
-    name: 'document.jpg',
+    type: "image/jpeg",
+    name: "document.jpg",
   } as any);
-  formData.append('language', language);
+  formData.append("language", language);
 
   const res = await fetch(`${serverUrl}/api/extract-document`, {
-    method: 'POST',
+    method: "POST",
     body: formData,
   });
 
@@ -224,20 +290,20 @@ export async function extractDocument(
  * Analyze food image for nutrition data using Vision model on Edge.
  */
 export async function analyzeFood(
-  imageUri: string
+  imageUri: string,
 ): Promise<{ nutrition: any }> {
   const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error('Not connected to server');
+  if (!serverUrl) throw new Error("Not connected to server");
 
   const formData = new FormData();
-  formData.append('image', {
+  formData.append("image", {
     uri: imageUri,
-    type: 'image/jpeg',
-    name: 'food.jpg',
+    type: "image/jpeg",
+    name: "food.jpg",
   } as any);
 
   const res = await fetch(`${serverUrl}/api/analyze-food`, {
-    method: 'POST',
+    method: "POST",
     body: formData,
   });
 

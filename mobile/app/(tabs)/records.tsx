@@ -9,6 +9,7 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/theme';
 import { getHealthRecords, type HealthRecordRow } from '../../services/database';
 import { ConnectionBadge } from '../../components/ConnectionBadge';
@@ -21,6 +22,7 @@ const TYPE_CONFIG: Record<string, { icon: React.ReactNode; label: string; color:
 };
 
 export default function RecordsScreen() {
+  const router = useRouter();
   const [records, setRecords] = useState<HealthRecordRow[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,7 +77,10 @@ export default function RecordsScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <ConnectionBadge status="connected" />
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => router.push('/(tabs)/scan')}
+          >
             <Plus size={16} color={Colors.textPrimary} style={{ marginRight: 4 }} />
             <Text style={styles.addButtonText}>Add</Text>
           </TouchableOpacity>

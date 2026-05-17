@@ -1,5 +1,5 @@
 """
-Aivaan Edge Server Configuration
+SobaHealth Edge Server Configuration
 All settings for the local FastAPI server that bridges the mobile app to Ollama.
 """
 from pydantic_settings import BaseSettings
@@ -9,11 +9,11 @@ from typing import List
 
 class Settings(BaseSettings):
     """
-    Configuration for the Aivaan edge server.
+    Configuration for the SobaHealth edge server.
     All values are designed for fully offline operation.
     """
     # --- Server ---
-    APP_NAME: str = "Aivaan Edge Server"
+    APP_NAME: str = "SobaHealth Edge Server"
     APP_VERSION: str = "1.0.0"
     HOST: str = "0.0.0.0"  # Listen on all interfaces so phone can reach us
     PORT: int = 8000
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     WHISPER_COMPUTE_TYPE: str = "int8"  # Fastest on CPU
 
     # --- Database (Local SQLite) ---
-    DATABASE_URL: str = "sqlite:///./aivaan.db"
+    DATABASE_URL: str = "sqlite:///./sobahealth.db"
 
     # --- Supported Languages ---
     SUPPORTED_LANGUAGES: List[str] = ["en", "hi", "ta", "te", "bn", "kn"]

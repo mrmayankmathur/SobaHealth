@@ -5,7 +5,7 @@
  *
  * This is the foundation — if this doesn't work, nothing works.
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -17,24 +17,26 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/theme';
+} from "react-native";
+import { useRouter } from "expo-router";
 import {
-  setServerUrl,
-  testConnection,
-  parseQrData,
-} from '../services/api';
+  Colors,
+  Spacing,
+  Typography,
+  BorderRadius,
+  Shadows,
+} from "../constants/theme";
+import { setServerUrl, testConnection, parseQrData } from "../services/api";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
-type ConnectionStatus = 'idle' | 'testing' | 'connected' | 'failed';
+type ConnectionStatus = "idle" | "testing" | "connected" | "failed";
 
 export default function ConnectScreen() {
   const router = useRouter();
-  const [manualIp, setManualIp] = useState('');
-  const [status, setStatus] = useState<ConnectionStatus>('idle');
-  const [statusMessage, setStatusMessage] = useState('');
+  const [manualIp, setManualIp] = useState("");
+  const [status, setStatus] = useState<ConnectionStatus>("idle");
+  const [statusMessage, setStatusMessage] = useState("");
   const [showManual, setShowManual] = useState(false);
 
   // Animations
@@ -62,42 +64,42 @@ export default function ConnectScreen() {
           duration: 1500,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
   }, []);
 
   async function handleConnect(url: string) {
-    setStatus('testing');
-    setStatusMessage('Connecting to Aivaan server...');
+    setStatus("testing");
+    setStatusMessage("Connecting to SobaHealth server...");
 
     const result = await testConnection(url);
 
     if (result.connected) {
-      setStatus('connected');
-      setStatusMessage('Connected! Starting Aivaan...');
+      setStatus("connected");
+      setStatusMessage("Connected! Starting SobaHealth...");
       await setServerUrl(url);
 
       // Brief delay so user sees the success state
       setTimeout(() => {
-        router.replace('/(tabs)');
+        router.replace("/(tabs)");
       }, 1000);
     } else {
-      setStatus('failed');
-      setStatusMessage(result.error || 'Could not connect to server');
+      setStatus("failed");
+      setStatusMessage(result.error || "Could not connect to server");
     }
   }
 
   function handleManualConnect() {
     let ip = manualIp.trim();
     if (!ip) {
-      Alert.alert('Error', 'Please enter the server IP address');
+      Alert.alert("Error", "Please enter the server IP address");
       return;
     }
     // Add http:// and port if not present
-    if (!ip.startsWith('http')) {
+    if (!ip.startsWith("http")) {
       ip = `http://${ip}`;
     }
-    if (!ip.includes(':8000') && !ip.match(/:\d+$/)) {
+    if (!ip.includes(":8000") && !ip.match(/:\d+$/)) {
       ip = `${ip}:8000`;
     }
     handleConnect(ip);
@@ -107,45 +109,42 @@ export default function ConnectScreen() {
   // (expo-camera barcode scanning will be added when deps install)
 
   const statusColor =
-    status === 'connected'
+    status === "connected"
       ? Colors.success
-      : status === 'failed'
-      ? Colors.emergency
-      : status === 'testing'
-      ? Colors.connecting
-      : Colors.textSecondary;
+      : status === "failed"
+        ? Colors.emergency
+        : status === "testing"
+          ? Colors.connecting
+          : Colors.textSecondary;
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <Animated.View style={[styles.content, { opacity: fadeIn }]}>
         {/* Logo / Brand */}
         <Animated.View
-          style={[
-            styles.iconContainer,
-            { transform: [{ scale: pulseAnim }] },
-          ]}
+          style={[styles.iconContainer, { transform: [{ scale: pulseAnim }] }]}
         >
           <View style={styles.iconCircle}>
             <Text style={styles.iconEmoji}>🏥</Text>
           </View>
         </Animated.View>
 
-        <Text style={styles.title}>Aivaan</Text>
-        <Text style={styles.subtitle}>
-          Offline AI Health Assistant
-        </Text>
+        <Text style={styles.title}>SobaHealth</Text>
+        <Text style={styles.subtitle}>Offline AI Health Assistant</Text>
         <Text style={styles.description}>
-          Connect to your local Aivaan server to get started.{'\n'}
+          Connect to your local SobaHealth server to get started.{"\n"}
           No internet required — everything stays private.
         </Text>
 
         {/* Connection Status */}
-        {status !== 'idle' && (
+        {status !== "idle" && (
           <View style={[styles.statusBanner, { borderColor: statusColor }]}>
-            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+            <View
+              style={[styles.statusDot, { backgroundColor: statusColor }]}
+            />
             <Text style={[styles.statusText, { color: statusColor }]}>
               {statusMessage}
             </Text>
@@ -169,18 +168,18 @@ export default function ConnectScreen() {
             <TouchableOpacity
               style={[
                 styles.connectButton,
-                status === 'testing' && styles.connectButtonDisabled,
+                status === "testing" && styles.connectButtonDisabled,
               ]}
               onPress={handleManualConnect}
-              disabled={status === 'testing'}
+              disabled={status === "testing"}
             >
               <Text style={styles.connectButtonText}>
-                {status === 'testing' ? '...' : 'Connect'}
+                {status === "testing" ? "..." : "Connect"}
               </Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.hint}>
-            💡 Run the server on your laptop, then enter its IP here.{'\n'}
+            💡 Run the server on your laptop, then enter its IP here.{"\n"}
             Find your IP: run `ifconfig` or check WiFi settings.
           </Text>
         </View>
@@ -204,8 +203,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: Spacing.xxl,
   },
   iconContainer: {
@@ -216,8 +215,8 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     backgroundColor: Colors.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 2,
     borderColor: Colors.primary,
   },
@@ -238,20 +237,20 @@ const styles = StyleSheet.create({
   description: {
     ...Typography.bodyPrimary,
     color: Colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: Spacing.lg,
     lineHeight: 22,
   },
   statusBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     marginTop: Spacing.xl,
     borderWidth: 1,
-    width: '100%',
+    width: "100%",
   },
   statusDot: {
     width: 10,
@@ -261,23 +260,23 @@ const styles = StyleSheet.create({
   },
   statusText: {
     ...Typography.bodySecondary,
-    fontWeight: '500',
+    fontWeight: "500",
     flex: 1,
   },
   inputSection: {
-    width: '100%',
+    width: "100%",
     marginTop: Spacing.xxl,
   },
   inputLabel: {
     ...Typography.bodySecondary,
     color: Colors.textSecondary,
     marginBottom: Spacing.sm,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: "600",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   inputRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
   },
   input: {
@@ -290,24 +289,24 @@ const styles = StyleSheet.create({
     ...Typography.bodyPrimary,
     borderWidth: 1,
     borderColor: Colors.border,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   connectButton: {
     height: 50,
     paddingHorizontal: Spacing.xl,
     backgroundColor: Colors.primary,
     borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     ...Shadows.md,
   },
   connectButtonDisabled: {
     opacity: 0.6,
   },
   connectButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     ...Typography.bodyPrimary,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   hint: {
     ...Typography.micro,
@@ -316,9 +315,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   privacyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.success + '15',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.success + "15",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
@@ -331,7 +330,6 @@ const styles = StyleSheet.create({
   privacyText: {
     ...Typography.micro,
     color: Colors.success,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
-

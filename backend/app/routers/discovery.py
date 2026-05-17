@@ -39,7 +39,7 @@ async def discover():
         "host": ip,
         "port": 8000,
         "url": f"http://{ip}:8000",
-        "app": "Aivaan Edge Server",
+        "app": "SobaHealth Edge Server",
     }
 
 
@@ -64,7 +64,7 @@ async def qr_code_page():
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Aivaan — Connect Your Phone</title>
+        <title>SobaHealth — Connect Your Phone</title>
         <style>
             * {{ margin: 0; padding: 0; box-sizing: border-box; }}
             body {{
@@ -135,7 +135,7 @@ async def qr_code_page():
     </head>
     <body>
         <div class="card">
-            <h1>🏥 Aivaan</h1>
+            <h1>🏥 SobaHealth</h1>
             <div class="subtitle">Connect Your Phone</div>
 
             <div class="qr-container">
@@ -151,7 +151,7 @@ async def qr_code_page():
                 </div>
             </div>
 
-            <p>Scan this QR code with the Aivaan app</p>
+            <p>Scan this QR code with the SobaHealth app</p>
 
             <div class="connection-info">
                 {ip}:8000

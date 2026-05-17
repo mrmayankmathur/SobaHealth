@@ -45,10 +45,16 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <ConnectionBadge status="connected" />
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={() => router.push('/onboarding')}
+          >
             <Text style={styles.avatarText}>{userName.charAt(0)}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={() => router.push('/connect')}
+          >
             <Settings size={20} color={Colors.textPrimary} />
           </TouchableOpacity>
         </View>

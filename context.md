@@ -1241,7 +1241,7 @@ Feels premium + global
 
 No obvious collisions
 
-🥉 Aivaan
+🥉 SobaHealth
 AI + “Vaan” (sky/expanse vibe)
 
 Short, futuristic, Indian-rooted subtly
@@ -1317,7 +1317,7 @@ Zorai ⭐ (clean + powerful)
 
 Lokai ⭐ (beautiful meaning)
 
-Aivaan ⭐ (premium feel)
+SobaHealth ⭐ (premium feel)
 
 Gaonix ⭐ (storytelling gold)
 
@@ -1358,9 +1358,9 @@ or rewrite your pitch using the final name
 
 Just say 👍
 
-Aivaan now tell me the platform engineering part and architecture flow will be develop a app and download full gemma 4 model in that only or what
+SobaHealth now tell me the platform engineering part and architecture flow will be develop a app and download full gemma 4 model in that only or what
 
-Good choice—Aivaan feels clean and scalable.
+Good choice—SobaHealth feels clean and scalable.
 
 Now let’s get very real about the platform engineering + architecture, because this is where most hackathon ideas collapse.
 
@@ -1390,7 +1390,7 @@ Think:
 🧠 On-device small model (basic tasks)
 ↓
 🖥️ Edge AI node (full intelligence)
-🧠 AIVAAN – SYSTEM ARCHITECTURE (WINNING DESIGN)
+🧠 SOBAHEALTH – SYSTEM ARCHITECTURE (WINNING DESIGN)
 🏗️ 1. Three-Tier Architecture
 Tier 1: 📱 Mobile App (Client Layer)
 This is what you build in the hackathon.
@@ -1577,7 +1577,7 @@ overbuild UI
 💡 Positioning (IMPORTANT)
 In your explanation say:
 
-“Aivaan uses a distributed offline AI architecture—combining on-device intelligence with edge compute nodes to deliver scalable AI without internet dependency.”
+“SobaHealth uses a distributed offline AI architecture—combining on-device intelligence with edge compute nodes to deliver scalable AI without internet dependency.”
 
 That line alone sounds staff-engineer level.
 
@@ -1603,9 +1603,9 @@ Just tell me 👍
 
 Draw a clean architecture diagram (presentation-ready)
 
-Here’s a clean, presentation-ready architecture diagram for Aivaan that you can directly put into slides (or recreate in Figma / PowerPoint).
+Here’s a clean, presentation-ready architecture diagram for SobaHealth that you can directly put into slides (or recreate in Figma / PowerPoint).
 
-🧠 AIVAAN – OFFLINE AI ARCHITECTURE
+🧠 SOBAHEALTH – OFFLINE AI ARCHITECTURE
 🎯 High-Level View
 ┌──────────────────────────────┐
 │ 📱 Mobile App │
@@ -1680,7 +1680,7 @@ Here’s a clean, presentation-ready architecture diagram for Aivaan that you ca
 │
 └── 🖥️ Edge Node (Primary Intelligence)
 🧠 One-Line Explanation (Put under diagram)
-Aivaan uses a hybrid offline-first architecture combining on-device intelligence with edge-based LLM inference, enabling powerful AI without internet dependency.
+SobaHealth uses a hybrid offline-first architecture combining on-device intelligence with edge-based LLM inference, enabling powerful AI without internet dependency.
 
 🎨 How to Make It Look Premium (Quick Tips)
 When you convert this to slides:
@@ -1714,7 +1714,7 @@ Build a GitHub-ready system structure
 
 Perfect—this is where you separate yourself from 90% of hackathon teams.
 
-Below is a clean, GitHub-ready, production-style repo structure for Aivaan that:
+Below is a clean, GitHub-ready, production-style repo structure for SobaHealth that:
 
 looks like a real startup project
 
@@ -1722,9 +1722,9 @@ is easy to demo
 
 is scalable post-hackathon
 
-🧠 AIVAAN – GITHUB PROJECT STRUCTURE
+🧠 SOBAHEALTH – GITHUB PROJECT STRUCTURE
 📦 Monorepo (Recommended)
-aivaan/
+sobahealth/
 │
 ├── README.md
 ├── LICENSE
@@ -1838,7 +1838,7 @@ return jsonDecode(response.body)["response"];
 from fastapi import FastAPI
 from app.api.routes import router
 
-app = FastAPI(title="Aivaan Edge AI")
+app = FastAPI(title="SobaHealth Edge AI")
 
 app.include_router(router)
 📡 API Routes
@@ -1911,9 +1911,9 @@ ports: - "8000:8000"
 volumes: - ./edge-server:/app
 🚀 README.md (TOP SECTION – VERY IMPORTANT)
 
-# Aivaan – Offline AI Copilot
+# SobaHealth – Offline AI Copilot
 
-Aivaan is a fully offline, multilingual AI system providing
+SobaHealth is a fully offline, multilingual AI system providing
 education and primary healthcare support in low-connectivity environments.
 
 ## Features
@@ -1952,7 +1952,7 @@ Extendable (CV, agents, etc.)
 ⚡ Final Advice (Critical)
 During judging, say this:
 
-“We designed Aivaan as a modular offline AI platform with a decoupled edge inference architecture, enabling scalable deployment across low-resource environments.”
+“We designed SobaHealth as a modular offline AI platform with a decoupled edge inference architecture, enabling scalable deployment across low-resource environments.”
 
 That sentence alone = engineering maturity
 
@@ -1969,7 +1969,7 @@ Just tell me 👍
 
 expalin architecture in very short and layman language
 
-Think of Aivaan like this:
+Think of SobaHealth like this:
 
 👉 Your phone is just the interface (like a remote control)
 👉 The real brain sits nearby on a local device (like a laptop or mini server)
@@ -1987,7 +1987,7 @@ It sends back a smart answer
 App shows it or speaks it
 
 ⚡ One-line version (use in pitch)
-“Aivaan runs AI locally—your phone sends questions to a nearby device that processes them and replies, so everything works even without internet.”
+“SobaHealth runs AI locally—your phone sends questions to a nearby device that processes them and replies, so everything works even without internet.”
 
 🎯 Analogy
 It’s like having a teacher or doctor sitting next to you, not on the internet.
@@ -2000,7 +2000,7 @@ and also explain without internet vs just WiFi hotspot meaning in layman's terms
 
 Great—this is exactly the kind of clarity judges look for.
 
-🔐 How Aivaan solves “privacy is non-negotiable”
+🔐 How SobaHealth solves “privacy is non-negotiable”
 🧠 Core idea
 Your data never leaves your environment.
 
@@ -2019,7 +2019,7 @@ student data tracked
 
 no control over usage
 
-✅ What Aivaan does differently
+✅ What SobaHealth does differently
 Everything stays local:
 📱 Your phone → sends data
 
@@ -2054,12 +2054,12 @@ A student’s learning data
 
 A health worker handling patient info
 
-👉 With Aivaan:
+👉 With SobaHealth:
 
 All of this stays inside the village / school / clinic
 
 💬 One-line pitch
-“Aivaan ensures complete data privacy by processing everything locally, so sensitive information never leaves the community.”
+“SobaHealth ensures complete data privacy by processing everything locally, so sensitive information never leaves the community.”
 
 🌐 “No Internet” vs “WiFi Hotspot” (Super Clear)
 This confuses a LOT of people—so explaining it well = big win.
@@ -2094,7 +2094,7 @@ Internet = calling someone in another country 🌍
 
 WiFi hotspot = talking to someone in the same room 🏠
 
-💡 In Aivaan
+💡 In SobaHealth
 Phone connects to nearby device via hotspot
 
 AI runs on that device
@@ -2107,7 +2107,7 @@ Responses come back instantly
 “We don’t need internet—just a local connection between the phone and a nearby device, like talking over a private network.”
 
 🧠 Combined Killer Line (Use This in Pitch)
-“Aivaan runs entirely on a local network, so even without internet, users get powerful AI while their data never leaves their community—ensuring both accessibility and absolute privacy.”
+“SobaHealth runs entirely on a local network, so even without internet, users get powerful AI while their data never leaves their community—ensuring both accessibility and absolute privacy.”
 
 If you want next, I can help you:
 
@@ -2134,7 +2134,7 @@ So your story becomes:
 
 “We don’t just keep data local—we make local systems secure by design.”
 
-🔐 How Aivaan Handles Local Data Security
+🔐 How SobaHealth Handles Local Data Security
 Think in layers of protection (simple + practical for hackathon).
 
 1️⃣ Data Minimization (First line of defense)
@@ -2163,7 +2163,7 @@ Basic protections:
 👉 Even if device is stolen → data is unreadable
 
 3️⃣ App-Level Security
-Inside Aivaan system:
+Inside SobaHealth system:
 
 Role-based access:
 
@@ -2201,7 +2201,7 @@ Offline authentication (PIN-based access)
 
 🧠 The Big Insight (Say This in Pitch)
 “Centralized cloud systems create large-scale data risks.
-Aivaan reduces risk by keeping data decentralized, local, and under community control.”
+SobaHealth reduces risk by keeping data decentralized, local, and under community control.”
 
 ⚖️ Tradeoff (Be Honest — Judges Respect This)
 You should acknowledge:
@@ -2214,7 +2214,7 @@ Massive data breaches Small, contained risk
 No user control Full local control
 External misuse Community-managed
 🎯 One-Line Answer (Use This)
-“Aivaan keeps data local and minimizes storage, while adding device encryption, access control, and secure local networks—ensuring privacy without relying on cloud trust.”
+“SobaHealth keeps data local and minimizes storage, while adding device encryption, access control, and secure local networks—ensuring privacy without relying on cloud trust.”
 
 💥 If They Push Further (Strong Answer)
 “In our model, even if a device is compromised, the impact is limited to that single location—not millions of users like in cloud breaches.”
@@ -2239,7 +2239,7 @@ No personal identifiers required
 
 are they mad?
 
-Not mad—just solving a different set of trade-offs than Aivaan.
+Not mad—just solving a different set of trade-offs than SobaHealth.
 
 Apps like ChatGPT, Google Gemini, and Claude keep (some) data because it enables things users expect from cloud AI at scale.
 
@@ -2289,7 +2289,7 @@ Temporary logging is often unavoidable
 ⚖️ So what’s the real difference?
 It’s not “right vs wrong”—it’s context.
 
-Cloud AI (ChatGPT, etc.) Aivaan
+Cloud AI (ChatGPT, etc.) SobaHealth
 Built for global scale Built for local communities
 Prioritizes convenience Prioritizes privacy
 Stores some data Minimizes or avoids storage
@@ -2297,11 +2297,11 @@ Internet required Works offline
 Centralized Decentralized
 🎯 The key insight (this is your winning angle)
 Cloud AI optimizes for performance, personalization, and scale
-Aivaan optimizes for privacy, control, and accessibility
+SobaHealth optimizes for privacy, control, and accessibility
 
 💥 Strong answer if a judge challenges you
 “Cloud AI systems store data to enable personalization, safety, and continuous improvement at global scale.
-Aivaan operates in a different context—where privacy is critical and connectivity is limited—so we minimize storage and keep all data local by design.”
+SobaHealth operates in a different context—where privacy is critical and connectivity is limited—so we minimize storage and keep all data local by design.”
 
 🧠 Even stronger (balanced + mature)
 Don’t say “we store nothing” blindly. Say:
@@ -2328,7 +2328,7 @@ Short answer: No—you don’t lose them. You just do them differently (and more
 
 You’re trading centralized intelligence for local + privacy-preserving intelligence.
 
-🧠 Personalization in Aivaan (YES, still possible)
+🧠 Personalization in SobaHealth (YES, still possible)
 ✅ How it works (locally)
 Preferences stored on the device, not cloud
 
@@ -2391,15 +2391,15 @@ Fine-tune offline before deployment
 “We trade global personalization for local, privacy-preserving personalization.”
 
 🧠 Simple Comparison
-Feature Cloud AI Aivaan
+Feature Cloud AI SobaHealth
 Personalization Global + cross-device Local to user/community
 Learning Continuous global training Local + periodic updates
 Privacy Medium Very high
 🎯 One-Line Answer (Use in pitch/Q&A)
-“Aivaan supports personalization and improvement locally—by storing preferences on-device and improving knowledge via offline updates—without compromising user privacy.”
+“SobaHealth supports personalization and improvement locally—by storing preferences on-device and improving knowledge via offline updates—without compromising user privacy.”
 
 💥 Stronger Version (if they push)
-“Instead of learning from millions of users centrally, Aivaan learns contextually within each community, making it more relevant while preserving privacy.”
+“Instead of learning from millions of users centrally, SobaHealth learns contextually within each community, making it more relevant while preserving privacy.”
 
 🚀 Pro Tip (This wins points)
 Position it like this:
@@ -2597,7 +2597,7 @@ Privacy story: "We use Gemma 4 so _Google/OpenAI never sees your data_, but WE s
 
 ---
 
-**Path B — True Local-First (Aivaan model)**
+**Path B — True Local-First (SobaHealth model)**
 
 ```
 User Device → Local Gemma 4 (Ollama/llama.cpp)
@@ -2910,7 +2910,7 @@ Options:
 
 **Decision 4 — Name and story**
 
-From the previous brainstorm: Aivaan, Saathiq, Zorai, Lokai.
+From the previous brainstorm: SobaHealth, Saathiq, Zorai, Lokai.
 
 But there's another angle — the hackathon description says _"build for the places that need it most."_ Your story needs ONE person, ONE village, ONE problem. Not a feature list.
 
@@ -3380,7 +3380,7 @@ ollama pull gemma4:4b
 ollama run gemma4:4b "You are a health assistant. A patient says they have a fever. Ask them 3 follow-up questions in Hindi."
 
 # Terminal 2 — Python backend scaffold
-mkdir aivaan-backend && cd aivaan-backend
+mkdir sobahealth-backend && cd sobahealth-backend
 pip install fastapi uvicorn faster-whisper sqlalchemy aiofiles python-multipart httpx
 ```
 
@@ -3610,7 +3610,7 @@ The app code is **identical** either way. You just swap one service file.
 Cactus is more impressive but has setup risk. Ollama is safe. Your call.
 
 **Decision 2:** App name?
-From the previous brainstorm — Aivaan, Zorai, Lokai, Saathiq. Pick one now so we name everything consistently from day 1.
+From the previous brainstorm — SobaHealth, Zorai, Lokai, Saathiq. Pick one now so we name everything consistently from day 1.
 
 **Decision 3:** Core features for the demo (pick 3 maximum)?
 
@@ -3632,7 +3632,7 @@ Lock these three decisions and we start writing code immediately.
 
 message time: 2026-05-12 14:53:26
 
-# Aivaan — Implementation Plan
+# SobaHealth — Implementation Plan
 
 ## Architecture Decision: React Native (Expo) + FastAPI Edge Server
 
@@ -4018,7 +4018,7 @@ Fix the three critical issues, add the four missing pieces to the phase plan, an
 
 message time: 2026-05-12 15:19:01
 
-Updated Plan: "# Aivaan — Implementation Plan (v2)
+Updated Plan: "# SobaHealth — Implementation Plan (v2)
 
 > Updated based on critical review feedback.
 
@@ -4304,4 +4304,4 @@ Prize tracks targeted:     Main + Health + Digital Equity + Ollama = ~$80K
 
 Pick the app name now. Every file, every variable, every screen title gets named consistently from commit 1. Changing it mid-build wastes hours.
 
-From the options discussed: **Aivaan** is clean, already chosen, low-collision. Confirm it or pick another — then we start with the actual code.
+From the options discussed: **SobaHealth** is clean, already chosen, low-collision. Confirm it or pick another — then we start with the actual code.

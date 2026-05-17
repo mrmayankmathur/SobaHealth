@@ -1,5 +1,5 @@
 /**
- * Aivaan — Tab Navigation Layout
+ * SobaHealth — Tab Navigation Layout
  * Main app navigation with 5 core tabs:
  * 1. Home (Dashboard)
  * 2. Symptoms (Symptom Checker)
@@ -7,10 +7,21 @@
  * 4. Chat (AI Health Assistant)
  * 5. Records
  */
-import { Tabs } from 'expo-router';
-import { View, StyleSheet, Platform } from 'react-native';
-import { Home, Stethoscope, Camera, MessageSquare, ClipboardList } from 'lucide-react-native';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/theme';
+import { Tabs } from "expo-router";
+import { View, StyleSheet, Platform } from "react-native";
+import {
+  Home,
+  Stethoscope,
+  Camera,
+  MessageSquare,
+  ClipboardList,
+} from "lucide-react-native";
+import {
+  Colors,
+  Spacing,
+  Typography,
+  BorderRadius,
+} from "../../constants/theme";
 
 export default function TabLayout() {
   return (
@@ -27,7 +38,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: "Home",
           tabBarIcon: ({ focused, color }) => (
             <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
               <Home color={color} size={24} />
@@ -38,7 +49,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="symptoms"
         options={{
-          title: 'Symptoms',
+          title: "Symptoms",
           tabBarIcon: ({ focused, color }) => (
             <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
               <Stethoscope color={color} size={24} />
@@ -49,10 +60,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="scan"
         options={{
-          title: 'Scan',
+          title: "Scan",
           tabBarIcon: ({ focused, color }) => (
-            <View style={[styles.iconWrapCenter, focused && styles.iconWrapCenterActive]}>
-              <Camera color={focused ? Colors.surface : Colors.primary} size={28} />
+            <View
+              style={[
+                styles.iconWrapCenter,
+                focused && styles.iconWrapCenterActive,
+              ]}
+            >
+              <Camera
+                color={focused ? Colors.surface : Colors.primary}
+                size={28}
+              />
             </View>
           ),
         }}
@@ -60,7 +79,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'Chat',
+          title: "Chat",
           tabBarIcon: ({ focused, color }) => (
             <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
               <MessageSquare color={color} size={24} />
@@ -71,7 +90,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="records"
         options={{
-          title: 'Records',
+          title: "Records",
           tabBarIcon: ({ focused, color }) => (
             <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
               <ClipboardList color={color} size={24} />
@@ -88,9 +107,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopColor: Colors.border,
     borderTopWidth: 1,
-    height: Platform.OS === 'ios' ? 88 : 68,
+    height: Platform.OS === "ios" ? 88 : 68,
     paddingTop: Spacing.sm,
-    paddingBottom: Platform.OS === 'ios' ? Spacing.xl : Spacing.sm,
+    paddingBottom: Platform.OS === "ios" ? Spacing.xl : Spacing.sm,
     elevation: 0,
   },
   tabLabel: {

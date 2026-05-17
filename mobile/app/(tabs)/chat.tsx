@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,27 +11,32 @@ import {
   ActivityIndicator,
   Vibration,
   Alert,
-} from 'react-native';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/theme';
-import { sendChatMessage, transcribeAudio } from '../../services/api';
-import { pickModelFile } from '../../services/llm';
-import { startRecording, stopRecording } from '../../services/recorder';
-import * as SQLite from 'expo-sqlite';
-import { ConnectionBadge } from '../../components/ConnectionBadge';
-import { ChatBubble } from '../../components/ChatBubble';
-import { PTTButton } from '../../components/PTTButton';
-import { Send, Trash2 } from 'lucide-react-native';
+} from "react-native";
+import {
+  Colors,
+  Spacing,
+  Typography,
+  BorderRadius,
+  Shadows,
+} from "../../constants/theme";
+import { sendChatMessage, transcribeAudio } from "../../services/api";
+import { startRecording, stopRecording } from "../../services/recorder";
+import * as SQLite from "expo-sqlite";
+import { ConnectionBadge } from "../../components/ConnectionBadge";
+import { ChatBubble } from "../../components/ChatBubble";
+import { PTTButton } from "../../components/PTTButton";
+import { Send, Trash2 } from "lucide-react-native";
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
 }
 
 export default function ChatScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecordingState, setIsRecordingState] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -43,44 +48,58 @@ export default function ChatScreen() {
 
   async function loadChatHistory() {
     try {
-      const db = await SQLite.openDatabaseAsync('aivaan.db');
-      const rows = await db.getAllAsync<{ id: string; role: string; content: string; created_at: number }>(
-        `SELECT id, role, content, created_at FROM chat_messages ORDER BY created_at DESC LIMIT 50`
+      const db = await SQLite.openDatabaseAsync("sobahealth.db");
+      const rows = await db.getAllAsync<{
+        id: string;
+        role: string;
+        content: string;
+        created_at: number;
+      }>(
+        `SELECT id, role, content, created_at FROM chat_messages ORDER BY created_at DESC LIMIT 50`,
       );
 
       if (rows.length > 0) {
         const loaded: ChatMessage[] = rows.reverse().map((row) => ({
           id: row.id,
-          role: row.role as 'user' | 'assistant',
+          role: row.role as "user" | "assistant",
           content: row.content,
           timestamp: new Date(row.created_at),
         }));
         setMessages(loaded);
-        sessionIdRef.current = rows[0].id.split('-')[0] || Date.now().toString();
+        sessionIdRef.current =
+          rows[0].id.split("-")[0] || Date.now().toString();
       } else {
         setMessages([
           {
-            id: 'welcome',
-            role: 'assistant',
-            content: "Hello! I am your AI health assistant.\n\nI can help you understand symptoms, answer health questions, or explain lab results.",
+            id: "welcome",
+            role: "assistant",
+            content:
+              "Hello! I am your AI health assistant.\n\nI can help you understand symptoms, answer health questions, or explain lab results.",
             timestamp: new Date(),
           },
         ]);
       }
     } catch (e) {
-      console.warn('Failed to load chat history:', e);
+      console.warn("Failed to load chat history:", e);
     }
   }
 
   async function saveMessage(msg: ChatMessage) {
     try {
-      const db = await SQLite.openDatabaseAsync('aivaan.db');
+      const db = await SQLite.openDatabaseAsync("sobahealth.db");
       await db.runAsync(
         `INSERT OR REPLACE INTO chat_messages (id, session_id, role, content, language, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-        [msg.id, sessionIdRef.current, msg.role, msg.content, 'en', msg.timestamp.getTime()]
+        [
+          msg.id,
+          sessionIdRef.current,
+          msg.role,
+          msg.content,
+          "en",
+          msg.timestamp.getTime(),
+        ],
       );
     } catch (e) {
-      console.warn('Failed to save message:', e);
+      console.warn("Failed to save message:", e);
     }
   }
 
@@ -88,8 +107,13 @@ export default function ChatScreen() {
     const text = input.trim();
     if (!text || isLoading) return;
 
-    setInput('');
-    const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: text, timestamp: new Date() };
+    setInput("");
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: "user",
+      content: text,
+      timestamp: new Date(),
+    };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     await saveMessage(userMsg);
@@ -97,32 +121,28 @@ export default function ChatScreen() {
 
     setIsLoading(true);
     try {
-      const apiMessages = updatedMessages.filter((m) => m.id !== 'welcome').map((m) => ({ role: m.role, content: m.content }));
-      const response = await sendChatMessage(apiMessages, 'en');
-      const assistantMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'assistant', content: response.response, timestamp: new Date() };
+      const apiMessages = updatedMessages
+        .filter((m) => m.id !== "welcome")
+        .map((m) => ({ role: m.role, content: m.content }));
+      const response = await sendChatMessage(apiMessages, "en");
+      const assistantMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: response.response,
+        timestamp: new Date(),
+      };
       setMessages((prev) => [...prev, assistantMsg]);
       await saveMessage(assistantMsg);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(
+        () => flatListRef.current?.scrollToEnd({ animated: true }),
+        100,
+      );
     } catch (e: any) {
       console.warn(e);
-      if (e.message.includes('MODEL_NOT_FOUND')) {
-        Alert.alert(
-          'Model Not Found',
-          'Please select your Gemma 4 litertlm model file to continue.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Select File', 
-              onPress: async () => {
-                const success = await pickModelFile();
-                if (success) {
-                  Alert.alert('Success', 'Model loaded! Try sending your message again.');
-                }
-              }
-            }
-          ]
-        );
-      }
+      Alert.alert(
+        "Connection Error",
+        e.message || "Could not reach the Edge Server.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -150,41 +170,45 @@ export default function ChatScreen() {
         return;
       }
 
-      const result = await transcribeAudio(audioUri, 'en');
+      const result = await transcribeAudio(audioUri, "en");
       if (result.transcript && result.transcript.trim()) {
-        const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: result.transcript.trim(), timestamp: new Date() };
+        const userMsg: ChatMessage = {
+          id: Date.now().toString(),
+          role: "user",
+          content: result.transcript.trim(),
+          timestamp: new Date(),
+        };
         const updatedMessages = [...messages, userMsg];
         setMessages(updatedMessages);
         await saveMessage(userMsg);
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        setTimeout(
+          () => flatListRef.current?.scrollToEnd({ animated: true }),
+          100,
+        );
 
-        const apiMessages = updatedMessages.filter((m) => m.id !== 'welcome').map((m) => ({ role: m.role, content: m.content }));
-        const response = await sendChatMessage(apiMessages, 'en');
-        const assistantMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'assistant', content: response.response, timestamp: new Date() };
+        const apiMessages = updatedMessages
+          .filter((m) => m.id !== "welcome")
+          .map((m) => ({ role: m.role, content: m.content }));
+        const response = await sendChatMessage(apiMessages, "en");
+        const assistantMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: response.response,
+          timestamp: new Date(),
+        };
         setMessages((prev) => [...prev, assistantMsg]);
         await saveMessage(assistantMsg);
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        setTimeout(
+          () => flatListRef.current?.scrollToEnd({ animated: true }),
+          100,
+        );
       }
     } catch (e: any) {
       console.warn(e);
-      if (e.message.includes('MODEL_NOT_FOUND')) {
-        Alert.alert(
-          'Model Not Found',
-          'Please select your Gemma 4 litertlm model file to continue.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Select File', 
-              onPress: async () => {
-                const success = await pickModelFile();
-                if (success) {
-                  Alert.alert('Success', 'Model loaded! Try speaking your message again.');
-                }
-              }
-            }
-          ]
-        );
-      }
+      Alert.alert(
+        "Transcription Error",
+        e.message || "Could not process audio.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -192,16 +216,26 @@ export default function ChatScreen() {
 
   async function clearHistory() {
     try {
-      const db = await SQLite.openDatabaseAsync('aivaan.db');
-      await db.runAsync('DELETE FROM chat_messages');
-      setMessages([{ id: 'welcome', role: 'assistant', content: "History cleared. How can I help you today?", timestamp: new Date() }]);
+      const db = await SQLite.openDatabaseAsync("sobahealth.db");
+      await db.runAsync("DELETE FROM chat_messages");
+      setMessages([
+        {
+          id: "welcome",
+          role: "assistant",
+          content: "History cleared. How can I help you today?",
+          timestamp: new Date(),
+        },
+      ]);
     } catch (e) {
       console.warn(e);
     }
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
@@ -218,10 +252,14 @@ export default function ChatScreen() {
         ref={flatListRef}
         data={messages}
         renderItem={({ item, index }) => (
-          <ChatBubble 
-            role={item.role as 'user' | 'ai'} 
-            content={item.content} 
-            isStreaming={isLoading && index === messages.length - 1 && item.role === 'assistant'}
+          <ChatBubble
+            role={item.role as "user" | "ai"}
+            content={item.content}
+            isStreaming={
+              isLoading &&
+              index === messages.length - 1 &&
+              item.role === "assistant"
+            }
           />
         )}
         keyExtractor={(item) => item.id}
@@ -237,7 +275,7 @@ export default function ChatScreen() {
             <Text style={styles.loadingText}>AI is thinking...</Text>
           </View>
         )}
-        
+
         {isRecordingState && (
           <View style={styles.recordingIndicator}>
             <Text style={styles.recordingText}>Release to send...</Text>
@@ -255,15 +293,19 @@ export default function ChatScreen() {
             editable={!isLoading && !isRecordingState}
           />
           {input.trim().length > 0 ? (
-            <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={isLoading}>
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={handleSend}
+              disabled={isLoading}
+            >
               <Send size={20} color={Colors.surface} />
             </TouchableOpacity>
           ) : (
             <View style={styles.pttContainer}>
-              <PTTButton 
-                onPressIn={handleStartRecording} 
-                onPressOut={handleStopRecording} 
-                isRecording={isRecordingState} 
+              <PTTButton
+                onPressIn={handleStartRecording}
+                onPressOut={handleStopRecording}
+                isRecording={isRecordingState}
               />
             </View>
           )}
@@ -287,9 +329,9 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.sm,
   },
   clearButton: {
@@ -312,28 +354,28 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   loadingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: Spacing.sm,
     gap: Spacing.sm,
   },
   loadingText: {
     ...Typography.micro,
     color: Colors.textSecondary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   recordingIndicator: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: Spacing.sm,
   },
   recordingText: {
     ...Typography.micro,
     color: Colors.emergency,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
   },
   textInput: {
@@ -355,12 +397,11 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     ...Shadows.sm,
   },
   pttContainer: {
     paddingHorizontal: 8,
   },
 });
-

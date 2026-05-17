@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Aivaan",
-    "slug": "aivaan",
+    "name": "SobaHealth",
+    "slug": "sobahealth",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "aivaan",
+    "scheme": "sobahealth",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -15,10 +15,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aivaan.healthapp",
+      "bundleIdentifier": "com.sobahealth.healthapp",
       "infoPlist": {
         "UIFileSharingEnabled": true,
         "LSSupportsOpeningDocumentsInPlace": true
+      },
+      "entitlements": {
+        "com.apple.developer.kernel.extended-virtual-addressing": true
       }
     },
     "android": {
@@ -27,7 +30,7 @@
         "backgroundColor": "#0F1419"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.aivaan.healthapp",
+      "package": "com.sobahealth.healthapp",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -40,13 +43,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Aivaan needs camera access to scan medical documents and food."
+          "cameraPermission": "SobaHealth needs camera access to scan medical documents and food."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Aivaan needs photo access to analyze medical documents."
+          "photosPermission": "SobaHealth needs photo access to analyze medical documents."
         }
       ]
     ],

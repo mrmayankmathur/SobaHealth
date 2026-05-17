@@ -1,21 +1,36 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/theme';
-import { saveUserProfile } from '../services/database';
+import { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
+import { useRouter } from "expo-router";
+import {
+  Colors,
+  Spacing,
+  Typography,
+  BorderRadius,
+  Shadows,
+} from "../constants/theme";
+import { saveUserProfile } from "../services/database";
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-  const [conditions, setConditions] = useState('');
-  const [allergies, setAllergies] = useState('');
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [conditions, setConditions] = useState("");
+  const [allergies, setAllergies] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   async function handleSave() {
     if (!name || !age) {
-      alert('Please provide at least your name and age.');
+      alert("Please provide at least your name and age.");
       return;
     }
 
@@ -25,41 +40,89 @@ export default function OnboardingScreen() {
         name,
         age: parseInt(age, 10) || 0,
         gender,
-        conditions: conditions.split(',').map(s => s.trim()).filter(Boolean),
-        allergies: allergies.split(',').map(s => s.trim()).filter(Boolean),
+        conditions: conditions
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        allergies: allergies
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
       });
-      router.replace('/(tabs)');
+      router.replace("/(tabs)");
     } catch (e) {
-      alert('Failed to save profile');
+      alert("Failed to save profile");
     } finally {
       setIsSaving(false);
     }
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Health Profile</Text>
-        <Text style={styles.subtitle}>Help Aivaan provide personalized advice.</Text>
+        <Text style={styles.subtitle}>
+          Help SobaHealth provide personalized advice.
+        </Text>
 
         <View style={styles.form}>
           <Text style={styles.label}>Name</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor={Colors.textSecondary} />
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Your name"
+            placeholderTextColor={Colors.textSecondary}
+          />
 
           <Text style={styles.label}>Age</Text>
-          <TextInput style={styles.input} value={age} onChangeText={setAge} placeholder="Your age" keyboardType="numeric" placeholderTextColor={Colors.textSecondary} />
+          <TextInput
+            style={styles.input}
+            value={age}
+            onChangeText={setAge}
+            placeholder="Your age"
+            keyboardType="numeric"
+            placeholderTextColor={Colors.textSecondary}
+          />
 
           <Text style={styles.label}>Gender</Text>
-          <TextInput style={styles.input} value={gender} onChangeText={setGender} placeholder="Male / Female / Other" placeholderTextColor={Colors.textSecondary} />
+          <TextInput
+            style={styles.input}
+            value={gender}
+            onChangeText={setGender}
+            placeholder="Male / Female / Other"
+            placeholderTextColor={Colors.textSecondary}
+          />
 
           <Text style={styles.label}>Medical Conditions (comma separated)</Text>
-          <TextInput style={styles.input} value={conditions} onChangeText={setConditions} placeholder="e.g. Diabetes, Hypertension" placeholderTextColor={Colors.textSecondary} />
+          <TextInput
+            style={styles.input}
+            value={conditions}
+            onChangeText={setConditions}
+            placeholder="e.g. Diabetes, Hypertension"
+            placeholderTextColor={Colors.textSecondary}
+          />
 
           <Text style={styles.label}>Allergies (comma separated)</Text>
-          <TextInput style={styles.input} value={allergies} onChangeText={setAllergies} placeholder="e.g. Peanuts, Penicillin" placeholderTextColor={Colors.textSecondary} />
+          <TextInput
+            style={styles.input}
+            value={allergies}
+            onChangeText={setAllergies}
+            placeholder="e.g. Peanuts, Penicillin"
+            placeholderTextColor={Colors.textSecondary}
+          />
 
-          <TouchableOpacity style={styles.button} onPress={handleSave} disabled={isSaving}>
-            <Text style={styles.buttonText}>{isSaving ? 'Saving...' : 'Save & Continue'}</Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleSave}
+            disabled={isSaving}
+          >
+            <Text style={styles.buttonText}>
+              {isSaving ? "Saving..." : "Save & Continue"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -93,7 +156,7 @@ const styles = StyleSheet.create({
   label: {
     ...Typography.bodySecondary,
     color: Colors.textPrimary,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: Spacing.md,
   },
   input: {
@@ -109,14 +172,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: Spacing.xxl,
     ...Shadows.md,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     ...Typography.bodyPrimary,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });
-

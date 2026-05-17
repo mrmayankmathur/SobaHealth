@@ -1,15 +1,15 @@
 /**
- * Aivaan — Root Layout
+ * SobaHealth — Root Layout
  * Handles app-level setup: fonts, splash screen, connection check.
  * Routes to onboarding (server setup) or main tabs based on connection state.
  */
-import { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { Colors } from '../constants/theme';
-import { getServerUrl } from '../services/api';
-import { initDatabase, getUserProfile } from '../services/database';
+import { useEffect, useState } from "react";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { Colors } from "../constants/theme";
+import { getServerUrl } from "../services/api";
+import { initDatabase, getUserProfile } from "../services/database";
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
@@ -26,7 +26,7 @@ export default function RootLayout() {
       const profile = await getUserProfile();
       setHasProfile(!!profile);
     } catch (e) {
-      console.warn('Database init failed:', e);
+      console.warn("Database init failed:", e);
     }
 
     const url = await getServerUrl();
@@ -50,13 +50,13 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: Colors.background },
-          animation: 'fade',
+          animation: "fade",
         }}
       >
         {!hasServer ? (
           <Stack.Screen
             name="connect"
-            options={{ presentation: 'fullScreenModal' }}
+            options={{ presentation: "fullScreenModal" }}
           />
         ) : !hasProfile ? (
           <Stack.Screen name="onboarding" />
@@ -71,8 +71,8 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loading: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: Colors.background,
   },
 });

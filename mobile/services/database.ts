@@ -1,4 +1,4 @@
-import * as SQLite from 'expo-sqlite';
+import * as SQLite from "expo-sqlite";
 
 export interface UserProfile {
   id: number;
@@ -29,7 +29,7 @@ export interface HealthRecordRow {
 }
 
 export async function initDatabase() {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
 
   // Define all tables on Day 1
   await db.execAsync(`
@@ -76,7 +76,7 @@ export async function initDatabase() {
       recorded_at INTEGER
     );
   `);
-  
+
   return db;
 }
 
@@ -85,24 +85,43 @@ export async function initDatabase() {
 // =============================================================================
 
 export async function getUserProfile() {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
-  const profile = await db.getFirstAsync<UserProfile>('SELECT * FROM user_profile LIMIT 1');
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
+  const profile = await db.getFirstAsync<UserProfile>(
+    "SELECT * FROM user_profile LIMIT 1",
+  );
   return profile;
 }
 
 export async function saveUserProfile(profile: any) {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
-  
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
+
   const existing = await getUserProfile();
   if (existing) {
     await db.runAsync(
       `UPDATE user_profile SET name=?, age=?, gender=?, blood_group=?, conditions=?, allergies=?, preferred_language=? WHERE id=?`,
-      [profile.name, profile.age, profile.gender, profile.blood_group, JSON.stringify(profile.conditions || []), JSON.stringify(profile.allergies || []), profile.preferred_language || 'en', existing.id]
+      [
+        profile.name,
+        profile.age,
+        profile.gender,
+        profile.blood_group,
+        JSON.stringify(profile.conditions || []),
+        JSON.stringify(profile.allergies || []),
+        profile.preferred_language || "en",
+        existing.id,
+      ],
     );
   } else {
     await db.runAsync(
       `INSERT INTO user_profile (name, age, gender, blood_group, conditions, allergies, preferred_language) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [profile.name, profile.age, profile.gender, profile.blood_group, JSON.stringify(profile.conditions || []), JSON.stringify(profile.allergies || []), profile.preferred_language || 'en']
+      [
+        profile.name,
+        profile.age,
+        profile.gender,
+        profile.blood_group,
+        JSON.stringify(profile.conditions || []),
+        JSON.stringify(profile.allergies || []),
+        profile.preferred_language || "en",
+      ],
     );
   }
 }
@@ -111,11 +130,13 @@ export async function saveUserProfile(profile: any) {
 // Chat History
 // =============================================================================
 
-export async function getChatMessages(limit: number = 50): Promise<ChatMessageRow[]> {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
+export async function getChatMessages(
+  limit: number = 50,
+): Promise<ChatMessageRow[]> {
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
   return db.getAllAsync<ChatMessageRow>(
     `SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT ?`,
-    [limit]
+    [limit],
   );
 }
 
@@ -126,17 +147,17 @@ export async function saveChatMessage(msg: {
   content: string;
   language: string;
 }): Promise<void> {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
   await db.runAsync(
     `INSERT OR REPLACE INTO chat_messages (id, session_id, role, content, language, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-    [msg.id, msg.sessionId, msg.role, msg.content, msg.language, Date.now()]
+    [msg.id, msg.sessionId, msg.role, msg.content, msg.language, Date.now()],
   );
 }
 
 export async function clearChatHistory(): Promise<void> {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
-  await db.runAsync('DELETE FROM chat_messages');
-  await db.runAsync('DELETE FROM chat_sessions');
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
+  await db.runAsync("DELETE FROM chat_messages");
+  await db.runAsync("DELETE FROM chat_sessions");
 }
 
 // =============================================================================
@@ -149,17 +170,23 @@ export async function saveHealthRecord(record: {
   extractedData: any;
   summary: string;
 }): Promise<void> {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
   await db.runAsync(
     `INSERT OR REPLACE INTO health_records (id, type, extracted_data, summary, created_at) VALUES (?, ?, ?, ?, ?)`,
-    [record.id, record.type, JSON.stringify(record.extractedData), record.summary, Date.now()]
+    [
+      record.id,
+      record.type,
+      JSON.stringify(record.extractedData),
+      record.summary,
+      Date.now(),
+    ],
   );
 }
 
 export async function getHealthRecords(): Promise<HealthRecordRow[]> {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
   return db.getAllAsync<HealthRecordRow>(
-    `SELECT * FROM health_records ORDER BY created_at DESC`
+    `SELECT * FROM health_records ORDER BY created_at DESC`,
   );
 }
 
@@ -167,19 +194,25 @@ export async function getHealthRecords(): Promise<HealthRecordRow[]> {
 // Health Trends
 // =============================================================================
 
-export async function saveHealthTrend(metric: string, value: number, unit: string): Promise<void> {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
+export async function saveHealthTrend(
+  metric: string,
+  value: number,
+  unit: string,
+): Promise<void> {
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
   const id = `${metric}-${Date.now()}`;
   await db.runAsync(
     `INSERT INTO health_trends (id, metric, value, unit, recorded_at) VALUES (?, ?, ?, ?, ?)`,
-    [id, metric, value, unit, Date.now()]
+    [id, metric, value, unit, Date.now()],
   );
 }
 
-export async function getHealthTrends(metric: string): Promise<Array<{value: number; unit: string; recorded_at: number}>> {
-  const db = await SQLite.openDatabaseAsync('aivaan.db');
+export async function getHealthTrends(
+  metric: string,
+): Promise<Array<{ value: number; unit: string; recorded_at: number }>> {
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
   return db.getAllAsync(
     `SELECT value, unit, recorded_at FROM health_trends WHERE metric=? ORDER BY recorded_at ASC`,
-    [metric]
+    [metric],
   );
 }

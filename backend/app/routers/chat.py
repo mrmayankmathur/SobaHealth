@@ -44,7 +44,7 @@ class ChatResponse(BaseModel):
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """
-    Send a message to Aivaan's health assistant.
+    Send a message to SobaHealth's health assistant.
     All inference happens locally via Ollama — nothing leaves this machine.
     """
     try:

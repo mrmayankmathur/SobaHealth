@@ -1,5 +1,5 @@
 """
-Aivaan Edge Server — Entry point
+SobaHealth Edge Server — Entry point
 Run with: python run.py
 """
 import uvicorn
@@ -10,7 +10,7 @@ settings = get_settings()
 if __name__ == "__main__":
     print(f"""
     ╔══════════════════════════════════════════════╗
-    ║           🏥 Aivaan Edge Server              ║
+    ║           🏥 SobaHealth Edge Server              ║
     ║      Offline AI Health Assistant              ║
     ╠══════════════════════════════════════════════╣
     ║  Server:  http://{settings.HOST}:{settings.PORT}            ║

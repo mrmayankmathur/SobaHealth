@@ -1,5 +1,5 @@
 """
-Ollama Service — The AI brain of Aivaan.
+Ollama Service — The AI brain of SobaHealth.
 Handles all communication with the locally running Ollama instance.
 Supports text chat, vision (multimodal), and streaming responses.
 """

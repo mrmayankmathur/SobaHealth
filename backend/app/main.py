@@ -1,6 +1,6 @@
 """
-Aivaan Edge Server — FastAPI Application
-The local AI brain that powers the Aivaan mobile app.
+SobaHealth Edge Server — FastAPI Application
+The local AI brain that powers the SobaHealth mobile app.
 
 Architecture:
   📱 Mobile App → (Local WiFi) → This Server → Ollama (Gemma 4)
@@ -19,7 +19,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description=(
-        "Aivaan Edge Server — Offline AI health assistant. "
+        "SobaHealth Edge Server — Offline AI health assistant. "
         "All inference runs locally via Ollama + Gemma 4. "
         "No data ever leaves this machine."
     ),

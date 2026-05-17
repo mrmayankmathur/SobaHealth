@@ -4,9 +4,9 @@
  * The server IP is discovered via QR code scan and stored in AsyncStorage.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateLLMResponse } from './llm';
 
 const STORAGE_KEY_SERVER_URL = '@aivaan_server_url';
-const DEFAULT_PORT = 8000;
 
 // Singleton state
 let _serverUrl: string | null = null;
@@ -39,7 +39,6 @@ export async function clearServerUrl(): Promise<void> {
 
 /**
  * Parse QR code data from the edge server.
- * Expected format: {"host": "192.168.x.x", "port": 8000}
  */
 export function parseQrData(data: string): string | null {
   try {
@@ -47,11 +46,9 @@ export function parseQrData(data: string): string | null {
     if (parsed.host && parsed.port) {
       return `http://${parsed.host}:${parsed.port}`;
     }
-    // Also accept plain URL
     if (data.startsWith('http')) return data;
     return null;
   } catch {
-    // Maybe it's just a plain URL
     if (data.startsWith('http')) return data;
     return null;
   }
@@ -59,7 +56,6 @@ export function parseQrData(data: string): string | null {
 
 /**
  * Test connection to the edge server.
- * Returns server info if connected, null if not.
  */
 export async function testConnection(url?: string): Promise<{
   connected: boolean;
@@ -91,32 +87,74 @@ export async function testConnection(url?: string): Promise<{
 }
 
 // =============================================================================
-// API Methods — Each maps to a FastAPI endpoint
+// API Methods — ON-DEVICE LLM
 // =============================================================================
 
 /**
- * Send a chat message to the AI health assistant.
+ * Send a chat message to the AI health assistant using the on-device model.
  */
 export async function sendChatMessage(
   messages: Array<{ role: string; content: string }>,
   language: string = 'en'
 ): Promise<{ response: string; language: string }> {
-  const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error('Not connected to server');
-
-  const res = await fetch(`${serverUrl}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, language, stream: false }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Server error: ${res.status}`);
+  // Construct Gemma instruction-tuned prompt
+  let prompt = '';
+  for (const m of messages) {
+    prompt += `<start_of_turn>${m.role}\n${m.content}<end_of_turn>\n`;
   }
+  prompt += `<start_of_turn>model\nRespond primarily in ${language}:\n`;
 
-  return res.json();
+  const responseText = await generateLLMResponse(prompt);
+  return { response: responseText.trim(), language };
 }
+
+/**
+ * Check symptoms and get risk assessment using the on-device model.
+ */
+export async function checkSymptoms(
+  messages: Array<{ role: string; content: string }>,
+  language: string = 'en'
+): Promise<{ response: string; urgency: string; reasoning?: string; extracted_data?: any }> {
+  // Construct prompt forcing JSON output for structured symptom triage
+  let prompt = '';
+  for (const m of messages) {
+    prompt += `<start_of_turn>${m.role}\n${m.content}<end_of_turn>\n`;
+  }
+  prompt += `<start_of_turn>model\n`;
+  prompt += `Analyze the symptoms. Output MUST be valid JSON with keys: "response" (friendly message to user asking follow ups or giving advice), "urgency" ("emergency", "see_doctor", or "self_care"), "reasoning" (your logic chain), and "extracted_data" (primary and associated symptoms). Respond in ${language}.\n`;
+
+  try {
+    const rawResponse = await generateLLMResponse(prompt);
+    
+    // Extract JSON from LLM output block
+    const jsonStart = rawResponse.indexOf('{');
+    const jsonEnd = rawResponse.lastIndexOf('}') + 1;
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      const jsonStr = rawResponse.substring(jsonStart, jsonEnd);
+      const parsed = JSON.parse(jsonStr);
+      return {
+        response: parsed.response || 'Please provide more details about how you are feeling.',
+        urgency: parsed.urgency || 'unknown',
+        reasoning: parsed.reasoning || rawResponse,
+        extracted_data: parsed.extracted_data || {}
+      };
+    } else {
+      // Fallback if LLM fails to structure JSON
+      return { 
+        response: rawResponse, 
+        urgency: 'unknown', 
+        reasoning: 'Failed to format JSON logic.', 
+        extracted_data: {} 
+      };
+    }
+  } catch (err: any) {
+    throw new Error(err.message || 'Symptom check failed to analyze via local LLM.');
+  }
+}
+
+// =============================================================================
+// API Methods — EDGE SERVER (For Heavy Vision tasks)
+// =============================================================================
 
 /**
  * Send audio for transcription (STT).
@@ -152,7 +190,7 @@ export async function transcribeAudio(
 }
 
 /**
- * Extract data from a medical document image.
+ * Extract data from a medical document image using Vision model on Edge.
  */
 export async function extractDocument(
   imageUri: string,
@@ -183,31 +221,7 @@ export async function extractDocument(
 }
 
 /**
- * Check symptoms and get risk assessment.
- */
-export async function checkSymptoms(
-  messages: Array<{ role: string; content: string }>,
-  language: string = 'en'
-): Promise<{ response: string; urgency: string; reasoning?: string; extracted_data?: any }> {
-  const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error('Not connected to server');
-
-  const res = await fetch(`${serverUrl}/api/symptom-check`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, language }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Symptom check failed: ${res.status}`);
-  }
-
-  return res.json();
-}
-
-/**
- * Analyze food image for nutrition data.
+ * Analyze food image for nutrition data using Vision model on Edge.
  */
 export async function analyzeFood(
   imageUri: string

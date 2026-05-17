@@ -15,7 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aivaan.healthapp"
+      "bundleIdentifier": "com.aivaan.healthapp",
+      "infoPlist": {
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,6 +35,7 @@
       ]
     },
     "plugins": [
+      "./plugins/withSwiftUICoreFix.js",
       "expo-router",
       [
         "expo-camera",

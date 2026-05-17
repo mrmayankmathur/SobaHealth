@@ -10,9 +10,11 @@ import {
   Platform,
   ActivityIndicator,
   Vibration,
+  Alert,
 } from 'react-native';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/theme';
 import { sendChatMessage, transcribeAudio } from '../../services/api';
+import { pickModelFile } from '../../services/llm';
 import { startRecording, stopRecording } from '../../services/recorder';
 import * as SQLite from 'expo-sqlite';
 import { ConnectionBadge } from '../../components/ConnectionBadge';
@@ -101,8 +103,26 @@ export default function ChatScreen() {
       setMessages((prev) => [...prev, assistantMsg]);
       await saveMessage(assistantMsg);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch (e) {
+    } catch (e: any) {
       console.warn(e);
+      if (e.message.includes('MODEL_NOT_FOUND')) {
+        Alert.alert(
+          'Model Not Found',
+          'Please select your Gemma 4 litertlm model file to continue.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Select File', 
+              onPress: async () => {
+                const success = await pickModelFile();
+                if (success) {
+                  Alert.alert('Success', 'Model loaded! Try sending your message again.');
+                }
+              }
+            }
+          ]
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -145,8 +165,26 @@ export default function ChatScreen() {
         await saveMessage(assistantMsg);
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn(e);
+      if (e.message.includes('MODEL_NOT_FOUND')) {
+        Alert.alert(
+          'Model Not Found',
+          'Please select your Gemma 4 litertlm model file to continue.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Select File', 
+              onPress: async () => {
+                const success = await pickModelFile();
+                if (success) {
+                  Alert.alert('Success', 'Model loaded! Try speaking your message again.');
+                }
+              }
+            }
+          ]
+        );
+      }
     } finally {
       setIsLoading(false);
     }

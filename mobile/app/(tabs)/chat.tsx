@@ -27,6 +27,7 @@ import { useRouter } from "expo-router";
 import * as SQLite from "expo-sqlite";
 import { ConnectionBadge } from "../../components/ConnectionBadge";
 import { ChatBubble } from "../../components/ChatBubble";
+import { ThinkingBlock } from "../../components/ThinkingBlock";
 import { PTTButton } from "../../components/PTTButton";
 import { Send, Trash2, Settings as SettingsIcon } from "lucide-react-native";
 
@@ -34,6 +35,7 @@ interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  reasoning?: string;
   timestamp: Date;
 }
 
@@ -128,11 +130,17 @@ export default function ChatScreen() {
       const apiMessages = updatedMessages
         .filter((m) => m.id !== "welcome")
         .map((m) => ({ role: m.role, content: m.content }));
-      const response = await sendChatMessage(apiMessages, "en");
+
+      const { getUserProfile } = require("../../services/database");
+      const profile = await getUserProfile();
+      const lang = profile?.preferred_language || "en";
+
+      const response = await sendChatMessage(apiMessages, lang);
       const assistantMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: response.response,
+        reasoning: response.reasoning,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMsg]);
@@ -172,7 +180,12 @@ export default function ChatScreen() {
         return;
       }
 
-      const result = await transcribeAudio(audioUri, "en");
+      const { getUserProfile } = require("../../services/database");
+      const profile = await getUserProfile();
+      const fallbackLang = profile?.preferred_language || "en";
+
+      // Do NOT pass a language parameter so Whisper auto-detects the spoken language.
+      const result = await transcribeAudio(audioUri);
       const transcript = (result.transcript || "").trim();
       const isBlank =
         !transcript ||
@@ -198,11 +211,16 @@ export default function ChatScreen() {
         const apiMessages = updatedMessages
           .filter((m) => m.id !== "welcome")
           .map((m) => ({ role: m.role, content: m.content }));
-        const response = await sendChatMessage(apiMessages, "en");
+
+        // Send the AI message using the detected language to keep the conversation natural
+        const chatLang = result.detected_language || fallbackLang;
+        const response = await sendChatMessage(apiMessages, chatLang);
+
         const assistantMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
           content: response.response,
+          reasoning: response.reasoning,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMsg]);
@@ -251,10 +269,10 @@ export default function ChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <ConnectionBadge />
+          <ConnectionBadge status="connected" />
           <View style={styles.headerActions}>
             <TouchableOpacity
-              onPress={() => router.push("/settings")}
+              onPress={() => router.push("/connect")}
               style={styles.clearButton}
               accessibilityLabel="Open settings"
             >
@@ -272,17 +290,32 @@ export default function ChatScreen() {
       <FlatList
         ref={flatListRef}
         data={messages}
-        renderItem={({ item, index }) => (
-          <ChatBubble
-            role={item.role as "user" | "ai"}
-            content={item.content}
-            isStreaming={
-              isLoading &&
-              index === messages.length - 1 &&
-              item.role === "assistant"
-            }
-          />
-        )}
+        renderItem={({ item, index }) => {
+          const isAssistant = item.role === "assistant";
+          return (
+            <View
+              style={{
+                width: "100%",
+                alignItems: isAssistant ? "flex-start" : "flex-end",
+              }}
+            >
+              {item.reasoning && (
+                <View style={{ width: "85%" }}>
+                  <ThinkingBlock reasoning_text={item.reasoning} />
+                </View>
+              )}
+              <ChatBubble
+                role={item.role as "user" | "ai"}
+                content={item.content}
+                isStreaming={
+                  isLoading &&
+                  index === messages.length - 1 &&
+                  item.role === "assistant"
+                }
+              />
+            </View>
+          );
+        }}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messagesList}
         showsVerticalScrollIndicator={false}

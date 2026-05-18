@@ -2,6 +2,15 @@
 
 > **Status**: deferred. Pick this up when upstream blockers clear OR when you
 > have a spare week for native-module hacking.
+>
+> **2026-05 update**: the *edge* side of this fine-tune is also currently
+> blocked by upstream Gemma 4 gaps (see `training/README.md` banner). Even on
+> the server, neither `llama.cpp convert_hf_to_gguf.py` nor `convert_lora_to_gguf.py`
+> nor Ollama's `ADAPTER` directive can yet handle a fine-tuned Gemma 4 model.
+> The training pipeline still produces the artefacts cleanly and pushes them to
+> HF — the moment any of those upstream paths fixes Gemma 4, the existing
+> [`scripts/install_clinical*.sh`](./scripts/) installers Just Work and the
+> backend's `resolve_model()` picks the tuned model up automatically.
 
 ## Why we deferred it
 

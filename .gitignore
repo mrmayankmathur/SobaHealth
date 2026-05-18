@@ -176,3 +176,11 @@ web-build/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Model artefacts — never commit, always pull from HF
+*.gguf
+*.safetensors
+*.litertlm
+training/outputs*/
+training/llama.cpp/
+~/.cache/sobahealth/

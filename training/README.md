@@ -5,11 +5,36 @@ shipped to the existing edge server via **Ollama**. Mobile on-device path keeps
 the stock Gemma 4 E2B for now (see [`FUTURE_OPTION_W.md`](./FUTURE_OPTION_W.md)
 for the runtime-adapter plan).
 
+> ### Deployment status (May 2026): PARKED — training works, packaging blocked upstream
+>
+> The fine-tune itself succeeded: see the smoke-run table below (+4 pp MCQ, SHIP
+> verdict). What is **not** yet shippable is converting that adapter into something
+> Ollama can load. Three independent OSS paths are all blocked by the same
+> Gemma 4 Matformer gap:
+>
+> | Path tried | Blocker | Tracking issue |
+> |---|---|---|
+> | `llama.cpp convert_hf_to_gguf.py` (merged → Q4_K_M) | Per-layer `key_length` / `feed_forward_length` are written as duplicate metadata keys, header gets overwritten with zeros, file is unloadable | [ggml-org/llama.cpp #22027](https://github.com/ggml-org/llama.cpp/pull/22027) (partial) |
+> | `llama.cpp convert_lora_to_gguf.py` (adapter only) | Same converter classes; zero Gemma references in script | [ggml-org/llama.cpp #23047](https://github.com/ggml-org/llama.cpp/issues/23047) |
+> | `ollama create` with raw safetensors adapter (`ADAPTER` directive) | Ollama's adapter loader officially supports Gemma 1/2 only; returns `Error: unsupported architecture` for Gemma 4 | [ollama/ollama #13314](https://github.com/ollama/ollama/issues/13314) (file-name fix only) |
+>
+> The base `ollama pull gemma4:e2b` works because Google publishes a curated
+> GGUF — no OSS tool can yet round-trip a *fine-tuned* Gemma 4 from HF/PEFT.
+>
+> **What this means in practice**: the backend's
+> [`ollama_service.resolve_model()`](../backend/app/services/ollama_service.py)
+> already prefers `sobahealth-clinical` and falls back to `gemma4:e2b`, so the
+> app is fine today. The moment any of those three upstream issues lands a fix,
+> re-run [`scripts/install_clinical_adapter.sh`](./scripts/install_clinical_adapter.sh)
+> (adapter path) or [`scripts/install_clinical.sh`](./scripts/install_clinical.sh)
+> (full-GGUF path) and the backend picks it up automatically — no code changes.
+
 ## Published artefacts
 
 | Artefact | Link |
 |---|---|
-| Fast smoke model (Q4_K_M GGUF, ~880 MB) | https://huggingface.co/themihirmathur/sobahealth-clinical-fast |
+| Fast smoke model (Q4_K_M GGUF, ~880 MB) — *currently corrupted, see banner above* | https://huggingface.co/themihirmathur/sobahealth-clinical-fast |
+| Adapter only (safetensors, ~60 MB) — *valid, but Ollama can't load it yet* | same repo, `adapter/` subfolder |
 | Shipping model (Q4_K_M GGUF, ~880 MB) | https://huggingface.co/themihirmathur/sobahealth-clinical *(produced by the full preset; same repo refreshed each ship)* |
 | Kaggle training notebook (forkable) | https://www.kaggle.com/code/themihirmathur/sobahealth-clinical-fine-tune-kaggle-t4 |
 
@@ -58,16 +83,19 @@ The two presets push to **different** HF repos (`...-clinical-fast` vs `...-clin
 
 ## Pipeline
 
-1. **Train** on Kaggle T4: open [`notebooks/kaggle_t4_train.ipynb`](./notebooks/kaggle_t4_train.ipynb), pick the preset in cell 3, run all cells. Produces a Q4_K_M GGUF file and pushes it to a private HF repo.
-2. **Install on laptop** — one command:
+1. **Train** on Kaggle T4: open [`notebooks/kaggle_t4_train.ipynb`](./notebooks/kaggle_t4_train.ipynb), pick the preset in cell 3, run all cells. Produces a merged HF folder, a Q4_K_M GGUF file *(currently broken for Gemma 4 — see banner)*, and pushes both plus the raw adapter to a private HF repo.
+2. **Install on laptop** — two options, both currently blocked by upstream Gemma 4 gaps but kept here so they're one-line ready the moment upstream lands fixes:
    ```bash
-   # fast preset (default)
-   HF_TOKEN=hf_xxx bash training/scripts/install_clinical.sh
-   # or full shipping preset
-   HF_TOKEN=hf_xxx bash training/scripts/install_clinical.sh full
+   # Option 1: merged-GGUF path (will work once llama.cpp/llama.cpp#22027 is complete)
+   HF_TOKEN=hf_xxx bash training/scripts/install_clinical.sh           # fast preset
+   HF_TOKEN=hf_xxx bash training/scripts/install_clinical.sh full      # shipping preset
+
+   # Option 2: adapter-on-base path (will work once ollama/ollama adds Gemma 4 to its adapter loader)
+   HF_TOKEN=hf_xxx bash training/scripts/install_clinical_adapter.sh           # fast preset
+   HF_TOKEN=hf_xxx bash training/scripts/install_clinical_adapter.sh full      # shipping preset
    ```
-   The script downloads the GGUF, runs `ollama create`, executes a smoke prompt, and prints the env var to export.
-3. **Point backend at it**: for the **full** preset there's nothing to do — [`backend/app/config.py`](../backend/app/config.py) already defaults to `sobahealth-clinical` with `gemma4:e2b` as fallback. For the **fast** preset, export `OLLAMA_MODEL=sobahealth-clinical:fast` before starting the backend so smoke runs don't clobber the shipping tag.
+   Each script downloads the artefact, runs `ollama create`, executes a smoke prompt, and prints the env var to export. Until upstream catches up, both terminate with the documented errors and the backend keeps using the `gemma4:e2b` fallback.
+3. **Point backend at it** (once an installer succeeds): for the **full** preset there's nothing to do — [`backend/app/config.py`](../backend/app/config.py) already defaults to `sobahealth-clinical` with `gemma4:e2b` as fallback. For the **fast** preset, export `OLLAMA_MODEL=sobahealth-clinical:fast` before starting the backend so smoke runs don't clobber the shipping tag.
 
 ## Hardware
 
@@ -84,12 +112,13 @@ The two presets push to **different** HF repos (`...-clinical-fast` vs `...-clin
 | [`notebooks/kaggle_t4_train.ipynb`](./notebooks/kaggle_t4_train.ipynb) | end-to-end Kaggle notebook (train + merge + GGUF + upload) |
 | [`merge.py`](./merge.py) | standalone CLI: adapter -> merged HF folder (run on Kaggle or locally) |
 | [`convert_to_gguf.sh`](./convert_to_gguf.sh) | clones llama.cpp and quantizes to Q4_K_M |
-| [`Modelfile.sobahealth-clinical`](./Modelfile.sobahealth-clinical) | for `ollama create` |
+| [`Modelfile.sobahealth-clinical`](./Modelfile.sobahealth-clinical) | for `ollama create` (merged-GGUF path) |
 | [`eval/eval_mcq_accuracy.py`](./eval/eval_mcq_accuracy.py) | MCQ letter-match accuracy, base vs fine-tuned |
 | [`eval/eval_multilingual_regression.py`](./eval/eval_multilingual_regression.py) | chrF on en/hi/ta sanity prompts |
 | [`eval/eval_set_indian_languages.jsonl`](./eval/eval_set_indian_languages.jsonl) | hand-curated multilingual prompts with gold answers |
 | [`eval/run_all.py`](./eval/run_all.py) | runs both evals, writes `eval_report.md` |
-| [`scripts/install_clinical.sh`](./scripts/install_clinical.sh) | one-shot installer: download GGUF -> ollama create -> smoke test |
+| [`scripts/install_clinical.sh`](./scripts/install_clinical.sh) | one-shot installer (merged-GGUF path): download GGUF -> ollama create -> smoke test |
+| [`scripts/install_clinical_adapter.sh`](./scripts/install_clinical_adapter.sh) | one-shot installer (adapter-on-base path): download adapter -> ollama create with `ADAPTER` directive -> smoke test |
 
 ## When you re-train
 

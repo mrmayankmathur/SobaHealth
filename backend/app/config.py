@@ -23,7 +23,11 @@ class Settings(BaseSettings):
 
     # --- Ollama (Local AI) ---
     OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
-    OLLAMA_MODEL: str = "gemma4:e2b"  # Gemma 4 E2B via Ollama
+    # Primary model: SobaHealth's clinical fine-tune (see training/README.md).
+    # If it is not installed locally, the ollama_service falls back to
+    # OLLAMA_FALLBACK_MODEL automatically on the first request.
+    OLLAMA_MODEL: str = "sobahealth-clinical"
+    OLLAMA_FALLBACK_MODEL: str = "gemma4:e2b"
     OLLAMA_TIMEOUT: int = 120  # seconds — generous for CPU inference
 
     # --- Whisper (Local STT) ---

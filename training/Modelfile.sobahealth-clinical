@@ -1,0 +1,39 @@
+# Ollama Modelfile for the SobaHealth clinical fine-tune.
+#
+# After downloading the GGUF from Hugging Face:
+#
+#   wget https://huggingface.co/<you>/sobahealth-clinical/resolve/main/sobahealth-clinical-q4_k_m.gguf
+#
+# create the model with:
+#
+#   ollama create sobahealth-clinical -f training/Modelfile.sobahealth-clinical
+#
+# (Run from a directory containing the .gguf file; the FROM line is relative.)
+
+FROM ./sobahealth-clinical-q4_k_m.gguf
+
+# Gemma 4 chat template - matches what the trainer used (start_of_turn /
+# end_of_turn markers). Don't change this without re-training.
+TEMPLATE """{{- if .System }}<start_of_turn>user
+{{ .System }}<end_of_turn>
+{{ end }}
+{{- range .Messages }}<start_of_turn>{{ if eq .Role "assistant" }}model{{ else }}user{{ end }}
+{{ .Content }}<end_of_turn>
+{{ end }}<start_of_turn>model
+"""
+
+PARAMETER stop "<end_of_turn>"
+PARAMETER stop "<start_of_turn>"
+
+# Conservative decoding for clinical advice. Match what the FastAPI backend
+# currently sends to base Gemma so the swap is drift-free.
+PARAMETER temperature 0.3
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.1
+PARAMETER num_ctx 4096
+
+SYSTEM """You are SobaHealth's clinical reasoning assistant. Answer medical
+questions accurately. When discussing diagnoses, treatments, or medications,
+include brief reasoning before the final answer. Never replace professional
+medical care - always recommend the user see a qualified clinician for
+diagnosis or treatment decisions."""

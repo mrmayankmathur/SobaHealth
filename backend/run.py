@@ -16,7 +16,7 @@ if __name__ == "__main__":
     ║  Server:  http://{settings.HOST}:{settings.PORT}            ║
     ║  Docs:    http://localhost:{settings.PORT}/docs       ║
     ║  Ollama:  {settings.OLLAMA_BASE_URL}           ║
-    ║  Model:   {settings.OLLAMA_MODEL}                    ║
+    ║  Model:   {settings.OLLAMA_MODEL} (fallback: {settings.OLLAMA_FALLBACK_MODEL})
     ║                                              ║
     ║  🔒 All processing is 100% local             ║
     ╚══════════════════════════════════════════════╝

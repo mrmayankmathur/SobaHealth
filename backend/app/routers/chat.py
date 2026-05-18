@@ -114,6 +114,9 @@ async def health_check():
     capabilities: list[str] = []
     if ollama_ok:
         capabilities.extend(["chat", "symptoms", "vision"])
+        # Lock in the resolved model name so the response below reflects
+        # what we'll actually call (clinical fine-tune vs fallback).
+        await ollama_service.resolve_model()
     # Whisper runs locally in-process; if the import works we assume STT is
     # serviceable. The mobile router treats a missing capability the same as
     # a 5xx and will fall back to on-device whisper.rn automatically.

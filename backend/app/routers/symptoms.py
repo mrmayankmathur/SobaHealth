@@ -141,8 +141,9 @@ async def check_symptoms(request: SymptomCheckRequest):
 
         # === Gemma 4 Function Calling + Thinking Mode ===
         # This payload uses Ollama's tool calling API which Gemma 4 supports natively
+        resolved_model = await ollama_service.resolve_model()
         payload = {
-            "model": settings.OLLAMA_MODEL,
+            "model": resolved_model,
             "messages": messages,
             "stream": False,
             "tools": HEALTH_RISK_TOOLS,

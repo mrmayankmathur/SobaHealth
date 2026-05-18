@@ -1,0 +1,18 @@
+# Local dev / linting only. The Kaggle notebook installs these itself.
+# Pin to versions that are known compatible with Unsloth 2026.4.x on T4.
+
+unsloth>=2026.4.2
+trl>=0.13.0
+peft>=0.13.0
+transformers>=5.5.0
+datasets>=3.0.0
+accelerate>=1.0.0
+bitsandbytes>=0.44.0
+huggingface_hub>=0.26.0
+
+# Eval
+sacrebleu>=2.4.0          # chrF for multilingual regression
+tqdm>=4.66.0
+
+# Data prep
+pyyaml>=6.0

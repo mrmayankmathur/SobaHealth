@@ -1,0 +1,75 @@
+# FAST preset for the SobaHealth clinical fine-tune.
+#
+# Target wall-clock on a Kaggle T4: ~20-25 minutes for the whole pipeline.
+#
+# Use this for first-time validation (does the loop work? does the GGUF
+# load in Ollama? does eval finish?). Expected MCQ gain over base Gemma 4
+# E2B is small (+0.5 - 1.5 pp) - this is NOT a shipping config.
+#
+# When you are ready to ship, switch the notebook's `CONFIG_PATH` to
+# `clinical_t4.yaml` and re-run.
+#
+# Key differences vs the full config:
+#   train_count: 1500   (vs 40000)
+#   eval_count:  50     (vs 400)
+#   num_train_epochs: 1 (vs 2)
+#   max_seq_length: 512 (vs 1024)
+#   lora.r: 8           (vs 16)
+#   grad_accum_steps: 8 (vs 8)
+
+model:
+  hf_id: "google/gemma-4-E2b-it"
+  load_in_16bit: true
+  load_in_4bit: false
+
+data:
+  hf_id: "openlifescienceai/medmcqa"
+  split: "train"
+  train_count: 1500
+  eval_count: 50
+  seed: 3407
+  require_explanation: true
+  out_dir: "/kaggle/working/data"
+
+lora:
+  r: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+training:
+  max_seq_length: 512
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8        # effective batch = 8
+  warmup_ratio: 0.05                    # slightly higher than full config (fewer total steps)
+  num_train_epochs: 1
+  learning_rate: 2.0e-4
+  optim: "adamw_8bit"
+  use_gradient_checkpointing: "unsloth"
+  logging_steps: 10
+  save_strategy: "epoch"
+  seed: 3407
+  output_dir: "/kaggle/working/outputs_clinical_fast"
+
+output:
+  adapter_dir: "/kaggle/working/outputs_clinical_fast/adapter"
+  merged_dir: "/kaggle/working/outputs_clinical_fast/merged_bf16"
+  gguf_path:  "/kaggle/working/outputs_clinical_fast/sobahealth-clinical-fast-q4_k_m.gguf"
+
+# Tiny eval to keep wall-clock down. run_all.py reads these to cap the eval
+# loop length; the full config omits both fields and runs everything.
+eval:
+  mcq_limit: 50
+  lang_limit: 6
+
+huggingface:
+  # Push to a -fast suffix so smoke runs never overwrite a real model.
+  push_repo: "sobahealth/sobahealth-clinical-fast"
+  push_private: true

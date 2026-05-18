@@ -21,7 +21,7 @@ import { checkSymptoms } from "../../services/api";
 import { ConnectionBadge } from "../../components/ConnectionBadge";
 import { ThinkingBlock } from "../../components/ThinkingBlock";
 import { Send, Activity } from "lucide-react-native";
-// import { describeInferenceError } from "../../services/errorMessages";
+import { describeInferenceError } from "../../services/errorMessages";
 import { awardXP } from "../../services/gamification";
 import { useRouter } from "expo-router";
 

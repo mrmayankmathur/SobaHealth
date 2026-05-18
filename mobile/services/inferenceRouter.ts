@@ -218,12 +218,19 @@ export interface ChatResult {
   response: string;
   language: string;
   via: ActivePath;
+  /**
+   * Optional reasoning chain (Gemma `<think>` blocks or a model-emitted
+   * rationale). The edge `/api/chat` route may return this when the
+   * multilingual / reasoning prompt template is in use; on-device chat
+   * leaves it undefined.
+   */
+  reasoning?: string;
 }
 
 export async function routeChat(
   messages: Array<{ role: string; content: string }>,
   language: string,
-  edgeFn: () => Promise<{ response: string; language: string }>,
+  edgeFn: () => Promise<{ response: string; language: string; reasoning?: string }>,
 ): Promise<ChatResult> {
   const mode = await getMode();
   const { target } = await decideTarget("chat");

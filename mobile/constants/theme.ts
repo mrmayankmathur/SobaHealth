@@ -31,6 +31,7 @@ export const Colors = {
 export const Typography = {
   h1: { fontSize: 24, fontWeight: "bold" as const },
   h2: { fontSize: 18, fontWeight: "600" as const },
+  h3: { fontSize: 16, fontWeight: "600" as const },
   bodyPrimary: { fontSize: 16, fontWeight: "normal" as const },
   bodySecondary: { fontSize: 14, fontWeight: "normal" as const },
   micro: { fontSize: 12, fontWeight: "500" as const },

@@ -150,7 +150,12 @@ function injectRag(
 export async function sendChatMessage(
   messages: Array<{ role: string; content: string }>,
   language: string = "en",
-): Promise<{ response: string; language: string; via?: "edge" | "device" }> {
+): Promise<{
+  response: string;
+  language: string;
+  reasoning?: string;
+  via?: "edge" | "device";
+}> {
   const ragContext = await buildRagContext();
   const enrichedMessages = injectRag(messages, ragContext);
 
@@ -171,7 +176,11 @@ export async function sendChatMessage(
       throw new Error(err.detail || `EDGE_UNREACHABLE: ${res.status}`);
     }
     const data = await res.json();
-    return { response: data.response, language: data.language };
+    return {
+      response: data.response,
+      language: data.language,
+      reasoning: data.reasoning ?? data.thinking,
+    };
   });
 
   return result;

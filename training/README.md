@@ -5,6 +5,25 @@ shipped to the existing edge server via **Ollama**. Mobile on-device path keeps
 the stock Gemma 4 E2B for now (see [`FUTURE_OPTION_W.md`](./FUTURE_OPTION_W.md)
 for the runtime-adapter plan).
 
+## Published artefacts
+
+| Artefact | Link |
+|---|---|
+| Fast smoke model (Q4_K_M GGUF, ~880 MB) | https://huggingface.co/themihirmathur/sobahealth-clinical-fast |
+| Shipping model (Q4_K_M GGUF, ~880 MB) | https://huggingface.co/themihirmathur/sobahealth-clinical *(produced by the full preset; same repo refreshed each ship)* |
+| Kaggle training notebook (forkable) | https://www.kaggle.com/code/themihirmathur/sobahealth-clinical-fine-tune-kaggle-t4 |
+
+### Smoke run baseline (May 2026, fast preset, 1.5k MedMCQA examples)
+
+| Metric | Base Gemma 4 E2B | Tuned | Delta |
+|---|---|---|---|
+| MedMCQA letter accuracy (50q) | 34.00% | 38.00% | **+4.00 pp** |
+| Hindi chrF (2 prompts) | 32.70 | 30.47 | -2.23 |
+| Tamil chrF (2 prompts) | 32.50 | 30.52 | -1.98 |
+| Script preservation (all langs) | 100% | 100% | 0 pp |
+
+Subject hot-spots: Pharmacology +20 pp, Pathology +25 pp, Forensic Medicine +66.67 pp. Verdict: **SHIP** (all three gates passed).
+
 ```
 Kaggle T4 (free)               your Mac laptop                 mobile app
 +------------------+           +-----------------+             +----------+
@@ -39,15 +58,16 @@ The two presets push to **different** HF repos (`...-clinical-fast` vs `...-clin
 
 ## Pipeline
 
-1. **Train** on Kaggle T4: open [`notebooks/kaggle_t4_train.ipynb`](./notebooks/kaggle_t4_train.ipynb), pick the preset in cell 3, run all cells. Produces a Q4_K_M GGUF file (~2.7 GB) and pushes it to a private HF repo.
-2. **Install on laptop**:
+1. **Train** on Kaggle T4: open [`notebooks/kaggle_t4_train.ipynb`](./notebooks/kaggle_t4_train.ipynb), pick the preset in cell 3, run all cells. Produces a Q4_K_M GGUF file and pushes it to a private HF repo.
+2. **Install on laptop** — one command:
    ```bash
-   # one-time
-   wget https://huggingface.co/<you>/sobahealth-clinical/resolve/main/sobahealth-clinical-q4_k_m.gguf
-   ollama create sobahealth-clinical -f training/Modelfile.sobahealth-clinical
-   ollama run sobahealth-clinical "Patient presents with crushing chest pain..."
+   # fast preset (default)
+   HF_TOKEN=hf_xxx bash training/scripts/install_clinical.sh
+   # or full shipping preset
+   HF_TOKEN=hf_xxx bash training/scripts/install_clinical.sh full
    ```
-3. **Point backend at it**: nothing to do — [`backend/app/config.py`](../backend/app/config.py) already defaults to `sobahealth-clinical` with `gemma4:e2b` as fallback (the backend swaps automatically if the clinical model isn't installed yet).
+   The script downloads the GGUF, runs `ollama create`, executes a smoke prompt, and prints the env var to export.
+3. **Point backend at it**: for the **full** preset there's nothing to do — [`backend/app/config.py`](../backend/app/config.py) already defaults to `sobahealth-clinical` with `gemma4:e2b` as fallback. For the **fast** preset, export `OLLAMA_MODEL=sobahealth-clinical:fast` before starting the backend so smoke runs don't clobber the shipping tag.
 
 ## Hardware
 
@@ -69,6 +89,7 @@ The two presets push to **different** HF repos (`...-clinical-fast` vs `...-clin
 | [`eval/eval_multilingual_regression.py`](./eval/eval_multilingual_regression.py) | chrF on en/hi/ta sanity prompts |
 | [`eval/eval_set_indian_languages.jsonl`](./eval/eval_set_indian_languages.jsonl) | hand-curated multilingual prompts with gold answers |
 | [`eval/run_all.py`](./eval/run_all.py) | runs both evals, writes `eval_report.md` |
+| [`scripts/install_clinical.sh`](./scripts/install_clinical.sh) | one-shot installer: download GGUF -> ollama create -> smoke test |
 
 ## When you re-train
 

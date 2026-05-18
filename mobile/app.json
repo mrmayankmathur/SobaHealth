@@ -51,6 +51,14 @@
         {
           "photosPermission": "SobaHealth needs photo access to analyze medical documents."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
       ]
     ],
     "experiments": {

@@ -21,6 +21,9 @@ import {
 } from "../../constants/theme";
 import { sendChatMessage, transcribeAudio } from "../../services/api";
 import { startRecording, stopRecording } from "../../services/recorder";
+import { showInferenceError } from "../../services/errorMessages";
+import { awardXP } from "../../services/gamification";
+import { useRouter } from "expo-router";
 import * as SQLite from "expo-sqlite";
 import { ConnectionBadge } from "../../components/ConnectionBadge";
 import { ChatBubble } from "../../components/ChatBubble";
@@ -137,6 +140,7 @@ export default function ChatScreen() {
         () => flatListRef.current?.scrollToEnd({ animated: true }),
         100,
       );
+      awardXP(10, "chat");
     } catch (e: any) {
       console.warn(e);
       Alert.alert(
@@ -201,6 +205,12 @@ export default function ChatScreen() {
         setTimeout(
           () => flatListRef.current?.scrollToEnd({ animated: true }),
           100,
+        );
+        awardXP(10, "chat");
+      } else {
+        Alert.alert(
+          "No Speech Detected",
+          "We couldn't hear any speech in that recording. Please try again.",
         );
       }
     } catch (e: any) {

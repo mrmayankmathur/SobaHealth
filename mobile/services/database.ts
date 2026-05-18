@@ -9,6 +9,8 @@ export interface UserProfile {
   conditions: string;
   allergies: string;
   preferred_language: string;
+  xp?: number;
+  unlocked_badges?: string;
 }
 
 export interface ChatMessageRow {
@@ -41,7 +43,9 @@ export async function initDatabase() {
       blood_group TEXT,
       conditions TEXT,  -- JSON array
       allergies TEXT,   -- JSON array
-      preferred_language TEXT DEFAULT 'en'
+      preferred_language TEXT DEFAULT 'en',
+      xp INTEGER DEFAULT 0,
+      unlocked_badges TEXT DEFAULT '[]'
     );
 
     CREATE TABLE IF NOT EXISTS chat_sessions (
@@ -77,6 +81,19 @@ export async function initDatabase() {
     );
   `);
 
+  // Migrate existing databases to have gamification columns
+  try {
+    await db.execAsync(`ALTER TABLE user_profile ADD COLUMN xp INTEGER DEFAULT 0;`);
+  } catch (e) {
+    // Column already exists
+  }
+  
+  try {
+    await db.execAsync(`ALTER TABLE user_profile ADD COLUMN unlocked_badges TEXT DEFAULT '[]';`);
+  } catch (e) {
+    // Column already exists
+  }
+
   return db;
 }
 
@@ -100,10 +117,10 @@ export async function saveUserProfile(profile: any) {
     await db.runAsync(
       `UPDATE user_profile SET name=?, age=?, gender=?, blood_group=?, conditions=?, allergies=?, preferred_language=? WHERE id=?`,
       [
-        profile.name,
-        profile.age,
-        profile.gender,
-        profile.blood_group,
+        profile.name ?? "",
+        profile.age ?? 0,
+        profile.gender ?? "",
+        profile.blood_group ?? "",
         JSON.stringify(profile.conditions || []),
         JSON.stringify(profile.allergies || []),
         profile.preferred_language || "en",
@@ -112,16 +129,27 @@ export async function saveUserProfile(profile: any) {
     );
   } else {
     await db.runAsync(
-      `INSERT INTO user_profile (name, age, gender, blood_group, conditions, allergies, preferred_language) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO user_profile (name, age, gender, blood_group, conditions, allergies, preferred_language, xp, unlocked_badges) VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]')`,
       [
-        profile.name,
-        profile.age,
-        profile.gender,
-        profile.blood_group,
+        profile.name ?? "",
+        profile.age ?? 0,
+        profile.gender ?? "",
+        profile.blood_group ?? "",
         JSON.stringify(profile.conditions || []),
         JSON.stringify(profile.allergies || []),
         profile.preferred_language || "en",
       ],
+    );
+  }
+}
+
+export async function updateUserGamification(xp: number, badges: string[]) {
+  const db = await SQLite.openDatabaseAsync("sobahealth.db");
+  const existing = await getUserProfile();
+  if (existing) {
+    await db.runAsync(
+      `UPDATE user_profile SET xp=?, unlocked_badges=? WHERE id=?`,
+      [xp, JSON.stringify(badges), existing.id]
     );
   }
 }

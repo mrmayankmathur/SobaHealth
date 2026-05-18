@@ -1,19 +1,31 @@
 /**
- * Edge Server API Client
- * Handles all communication between the mobile app and the local FastAPI server.
- * The server IP is discovered via QR code scan and stored in AsyncStorage.
+ * Edge Server API Client + Hybrid Inference Surface
+ *
+ * Owns the low-level fetch logic for talking to the FastAPI edge server
+ * (`http://<lan-ip>:8000`). Every high-level inference call
+ * (`sendChatMessage`, `checkSymptoms`, `extractDocument`, `analyzeFood`,
+ * `transcribeAudio`) is now routed through `inferenceRouter` so the edge
+ * path is preferred when reachable but on-device fallback kicks in
+ * automatically.
+ *
+ * Local SQLite RAG context is built here and injected into every prompt
+ * regardless of which backend serves the request, so personalisation
+ * stays consistent across paths.
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { generateLLMResponse } from "./llm";
+import {
+  routeChat,
+  routeSymptoms,
+  routeVision,
+  routeSTT,
+  invalidateHealthCache,
+} from "./inferenceRouter";
+import { getUserProfile, getHealthRecords } from "./database";
 
 const STORAGE_KEY_SERVER_URL = "@sobahealth_server_url";
 
-// Singleton state
 let _serverUrl: string | null = null;
 
-/**
- * Get the stored server URL, or null if not configured yet.
- */
 export async function getServerUrl(): Promise<string | null> {
   if (_serverUrl) return _serverUrl;
   const stored = await AsyncStorage.getItem(STORAGE_KEY_SERVER_URL);
@@ -21,25 +33,18 @@ export async function getServerUrl(): Promise<string | null> {
   return _serverUrl;
 }
 
-/**
- * Save the server URL from QR code scan.
- */
 export async function setServerUrl(url: string): Promise<void> {
   _serverUrl = url;
   await AsyncStorage.setItem(STORAGE_KEY_SERVER_URL, url);
+  invalidateHealthCache();
 }
 
-/**
- * Clear the stored server URL (for re-scan).
- */
 export async function clearServerUrl(): Promise<void> {
   _serverUrl = null;
   await AsyncStorage.removeItem(STORAGE_KEY_SERVER_URL);
+  invalidateHealthCache();
 }
 
-/**
- * Parse QR code data from the edge server.
- */
 export function parseQrData(data: string): string | null {
   try {
     const parsed = JSON.parse(data);
@@ -54,9 +59,6 @@ export function parseQrData(data: string): string | null {
   }
 }
 
-/**
- * Test connection to the edge server.
- */
 export async function testConnection(url?: string): Promise<{
   connected: boolean;
   serverInfo?: any;
@@ -87,14 +89,9 @@ export async function testConnection(url?: string): Promise<{
 }
 
 // =============================================================================
-// API Methods — EDGE SERVER LLM (With Local SQLite RAG)
+// Local-first RAG context (works for both edge and device inference paths)
 // =============================================================================
 
-import { getUserProfile, getHealthRecords } from "./database";
-
-/**
- * Builds the RAG context from the user's local SQLite profile and health records.
- */
 async function buildRagContext(): Promise<string> {
   try {
     const profile = await getUserProfile();
@@ -109,17 +106,16 @@ async function buildRagContext(): Promise<string> {
       const conditions = JSON.parse(profile.conditions);
       if (conditions.length > 0)
         context += `Medical Conditions: ${conditions.join(", ")}\n`;
-    } catch (e) {}
+    } catch {}
 
     try {
       const allergies = JSON.parse(profile.allergies);
       if (allergies.length > 0)
         context += `Allergies: ${allergies.join(", ")}\n`;
-    } catch (e) {}
+    } catch {}
 
     if (records && records.length > 0) {
       context += `\nRecent Health Records:\n`;
-      // Take up to 3 most recent records for context
       records.slice(0, 3).forEach((r) => {
         context += `- [${new Date(r.created_at).toISOString().split("T")[0]} - ${r.type.toUpperCase()}] ${r.summary}\n`;
       });
@@ -133,48 +129,54 @@ async function buildRagContext(): Promise<string> {
   }
 }
 
-/**
- * Send a chat message to the AI health assistant running on the Edge Server.
- */
+function injectRag(
+  messages: Array<{ role: string; content: string }>,
+  ragContext: string,
+): Array<{ role: string; content: string }> {
+  if (!ragContext) return messages;
+  const cloned = messages.map((m) => ({ ...m }));
+  if (cloned.length === 0) {
+    cloned.push({ role: "user", content: ragContext + "Hello" });
+  } else {
+    cloned[0].content = ragContext + cloned[0].content;
+  }
+  return cloned;
+}
+
+// =============================================================================
+// High-level inference calls (route through inferenceRouter)
+// =============================================================================
+
 export async function sendChatMessage(
   messages: Array<{ role: string; content: string }>,
   language: string = "en",
-): Promise<{ response: string; language: string }> {
-  const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error("Not connected to server");
-
+): Promise<{ response: string; language: string; via?: "edge" | "device" }> {
   const ragContext = await buildRagContext();
+  const enrichedMessages = injectRag(messages, ragContext);
 
-  // Clone messages and inject context into the first message or append as system
-  const payloadMessages = [...messages];
-  if (payloadMessages.length > 0) {
-    payloadMessages[0].content = ragContext + payloadMessages[0].content;
-  } else {
-    payloadMessages.push({ role: "user", content: ragContext + "Hello" });
-  }
-
-  const res = await fetch(`${serverUrl}/api/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: payloadMessages,
-      language,
-      stream: false,
-    }),
+  const result = await routeChat(enrichedMessages, language, async () => {
+    const serverUrl = await getServerUrl();
+    if (!serverUrl) throw new Error("EDGE_NOT_CONFIGURED");
+    const res = await fetch(`${serverUrl}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: enrichedMessages,
+        language,
+        stream: false,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `EDGE_UNREACHABLE: ${res.status}`);
+    }
+    const data = await res.json();
+    return { response: data.response, language: data.language };
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Chat failed: ${res.status}`);
-  }
-
-  const data = await res.json();
-  return { response: data.response, language: data.language };
+  return result;
 }
 
-/**
- * Check symptoms and get risk assessment using the Edge Server model.
- */
 export async function checkSymptoms(
   messages: Array<{ role: string; content: string }>,
   language: string = "en",
@@ -183,134 +185,175 @@ export async function checkSymptoms(
   urgency: string;
   reasoning?: string;
   extracted_data?: any;
+  via?: "edge" | "device";
 }> {
-  const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error("Not connected to server");
-
   const ragContext = await buildRagContext();
+  const enrichedMessages = injectRag(messages, ragContext);
 
-  const payloadMessages = [...messages];
-  if (payloadMessages.length > 0) {
-    payloadMessages[0].content = ragContext + payloadMessages[0].content;
-  }
-
-  const res = await fetch(`${serverUrl}/api/symptom-check`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: payloadMessages,
-      language,
-      use_thinking: true,
-    }),
+  const result = await routeSymptoms(enrichedMessages, language, async () => {
+    const serverUrl = await getServerUrl();
+    if (!serverUrl) throw new Error("EDGE_NOT_CONFIGURED");
+    const res = await fetch(`${serverUrl}/api/symptom-check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: enrichedMessages,
+        language,
+        use_thinking: true,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `EDGE_UNREACHABLE: ${res.status}`);
+    }
+    const data = await res.json();
+    return {
+      response: data.response,
+      urgency: data.urgency,
+      reasoning: data.thinking,
+      extracted_data: { risk_flags: data.risk_flags },
+    };
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Symptom check failed: ${res.status}`);
-  }
-
-  const data = await res.json();
-  return {
-    response: data.response,
-    urgency: data.urgency,
-    reasoning: data.thinking,
-    extracted_data: { risk_flags: data.risk_flags },
-  };
+  return result;
 }
 
-// =============================================================================
-// API Methods — EDGE SERVER (For Heavy Vision tasks)
-// =============================================================================
-
-/**
- * Send audio for transcription (STT).
- */
 export async function transcribeAudio(
   audioUri: string,
   language?: string,
-): Promise<{ transcript: string; detected_language: string }> {
-  const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error("Not connected to server");
+): Promise<{
+  transcript: string;
+  detected_language: string;
+  via?: "edge" | "device";
+}> {
+  const lang = language || "en";
+  const result = await routeSTT(audioUri, lang, async () => {
+    const serverUrl = await getServerUrl();
+    if (!serverUrl) throw new Error("EDGE_NOT_CONFIGURED");
 
-  const formData = new FormData();
-  formData.append("audio", {
-    uri: audioUri,
-    type: "audio/m4a",
-    name: "recording.m4a",
-  } as any);
-  if (language) {
-    formData.append("language", language);
-  }
+    const formData = new FormData();
+    formData.append("audio", {
+      uri: audioUri,
+      type: "audio/wav",
+      name: "recording.wav",
+    } as any);
+    if (language) formData.append("language", language);
 
-  const res = await fetch(`${serverUrl}/api/transcribe`, {
-    method: "POST",
-    body: formData,
+    const res = await fetch(`${serverUrl}/api/transcribe`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `EDGE_UNREACHABLE: ${res.status}`);
+    }
+    return res.json();
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Transcription failed: ${res.status}`);
-  }
-
-  return res.json();
+  return result;
 }
 
-/**
- * Extract data from a medical document image using Vision model on Edge.
- */
 export async function extractDocument(
   imageUri: string,
   language: string = "en",
-): Promise<{ extracted_data: any; summary: string }> {
-  const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error("Not connected to server");
+): Promise<{ extracted_data: any; summary: string; via?: "edge" | "device" }> {
+  const prompt =
+    "Extract the structured medical data from this document image. Return JSON with keys for test_name, value, unit, normal_range when relevant, plus a one-sentence patient-friendly summary.";
 
-  const formData = new FormData();
-  formData.append("image", {
-    uri: imageUri,
-    type: "image/jpeg",
-    name: "document.jpg",
-  } as any);
-  formData.append("language", language);
+  const result = await routeVision(imageUri, prompt, language, async () => {
+    const serverUrl = await getServerUrl();
+    if (!serverUrl) throw new Error("EDGE_NOT_CONFIGURED");
 
-  const res = await fetch(`${serverUrl}/api/extract-document`, {
-    method: "POST",
-    body: formData,
+    const formData = new FormData();
+    formData.append("image", {
+      uri: imageUri,
+      type: "image/jpeg",
+      name: "document.jpg",
+    } as any);
+    formData.append("language", language);
+
+    const res = await fetch(`${serverUrl}/api/extract-document`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `EDGE_UNREACHABLE: ${res.status}`);
+    }
+    const data = await res.json();
+    return JSON.stringify({
+      extracted_data: data.extracted_data,
+      summary: data.summary,
+    });
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Extraction failed: ${res.status}`);
+  // On-device path returns plain text from the model; try to coerce.
+  if (result.via === "device") {
+    let extracted_data: any = {};
+    let summary = result.text;
+    const jsonStart = result.text.indexOf("{");
+    const jsonEnd = result.text.lastIndexOf("}");
+    if (jsonStart !== -1 && jsonEnd > jsonStart) {
+      try {
+        extracted_data = JSON.parse(result.text.substring(jsonStart, jsonEnd + 1));
+        if (extracted_data.summary) summary = extracted_data.summary;
+      } catch {}
+    }
+    return { extracted_data, summary, via: "device" };
   }
 
-  return res.json();
+  try {
+    const parsed = JSON.parse(result.text);
+    return { ...parsed, via: result.via };
+  } catch {
+    return { extracted_data: {}, summary: result.text, via: result.via };
+  }
 }
 
-/**
- * Analyze food image for nutrition data using Vision model on Edge.
- */
 export async function analyzeFood(
   imageUri: string,
-): Promise<{ nutrition: any }> {
-  const serverUrl = await getServerUrl();
-  if (!serverUrl) throw new Error("Not connected to server");
+): Promise<{ nutrition: any; via?: "edge" | "device" }> {
+  const prompt =
+    "Analyse this food image. Return JSON with keys: items (array of {name, approx_calories, macros}), summary (single short patient-friendly line).";
 
-  const formData = new FormData();
-  formData.append("image", {
-    uri: imageUri,
-    type: "image/jpeg",
-    name: "food.jpg",
-  } as any);
+  const result = await routeVision(imageUri, prompt, "en", async () => {
+    const serverUrl = await getServerUrl();
+    if (!serverUrl) throw new Error("EDGE_NOT_CONFIGURED");
 
-  const res = await fetch(`${serverUrl}/api/analyze-food`, {
-    method: "POST",
-    body: formData,
+    const formData = new FormData();
+    formData.append("image", {
+      uri: imageUri,
+      type: "image/jpeg",
+      name: "food.jpg",
+    } as any);
+
+    const res = await fetch(`${serverUrl}/api/analyze-food`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `EDGE_UNREACHABLE: ${res.status}`);
+    }
+    const data = await res.json();
+    return JSON.stringify(data.nutrition);
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Food analysis failed: ${res.status}`);
+  if (result.via === "device") {
+    let nutrition: any = { summary: result.text };
+    const jsonStart = result.text.indexOf("{");
+    const jsonEnd = result.text.lastIndexOf("}");
+    if (jsonStart !== -1 && jsonEnd > jsonStart) {
+      try {
+        nutrition = JSON.parse(result.text.substring(jsonStart, jsonEnd + 1));
+      } catch {}
+    }
+    return { nutrition, via: "device" };
   }
 
-  return res.json();
+  try {
+    const parsed = JSON.parse(result.text);
+    return { nutrition: parsed, via: result.via };
+  } catch {
+    return { nutrition: { summary: result.text }, via: result.via };
+  }
 }

@@ -37,6 +37,7 @@ interface SymptomMessage {
 }
 
 export default function SymptomsScreen() {
+  const router = useRouter();
   const [messages, setMessages] = useState<SymptomMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -85,12 +86,16 @@ export default function SymptomsScreen() {
       );
       awardXP(20, "symptom");
     } catch (e: any) {
+      const friendly = describeInferenceError(e);
       const errMsg: SymptomMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: `⚠️ Error: ${e.message || "Could not process symptoms"}`,
       };
       setMessages((prev) => [...prev, errMsg]);
+      if (friendly.cta) {
+        setTimeout(() => router.push(friendly.cta!.route), 100);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -145,7 +150,7 @@ export default function SymptomsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <ConnectionBadge status="connected" />
+          <ConnectionBadge />
           <Text style={styles.headerTitle}>Symptom Checker</Text>
         </View>
       </View>

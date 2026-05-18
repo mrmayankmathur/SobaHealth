@@ -28,7 +28,7 @@ import * as SQLite from "expo-sqlite";
 import { ConnectionBadge } from "../../components/ConnectionBadge";
 import { ChatBubble } from "../../components/ChatBubble";
 import { PTTButton } from "../../components/PTTButton";
-import { Send, Trash2 } from "lucide-react-native";
+import { Send, Trash2, Settings as SettingsIcon } from "lucide-react-native";
 
 interface ChatMessage {
   id: string;
@@ -38,6 +38,7 @@ interface ChatMessage {
 }
 
 export default function ChatScreen() {
+  const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -143,10 +144,7 @@ export default function ChatScreen() {
       awardXP(10, "chat");
     } catch (e: any) {
       console.warn(e);
-      Alert.alert(
-        "Connection Error",
-        e.message || "Could not reach the Edge Server.",
-      );
+      showInferenceError(e, router);
     } finally {
       setIsLoading(false);
     }
@@ -175,11 +173,18 @@ export default function ChatScreen() {
       }
 
       const result = await transcribeAudio(audioUri, "en");
-      if (result.transcript && result.transcript.trim()) {
+      const transcript = (result.transcript || "").trim();
+      const isBlank =
+        !transcript ||
+        transcript.toUpperCase() === "[BLANK_AUDIO]" ||
+        transcript.toLowerCase().includes("blank_audio") ||
+        transcript === "...";
+
+      if (transcript && !isBlank) {
         const userMsg: ChatMessage = {
           id: Date.now().toString(),
           role: "user",
-          content: result.transcript.trim(),
+          content: transcript,
           timestamp: new Date(),
         };
         const updatedMessages = [...messages, userMsg];
@@ -215,10 +220,7 @@ export default function ChatScreen() {
       }
     } catch (e: any) {
       console.warn(e);
-      Alert.alert(
-        "Transcription Error",
-        e.message || "Could not process audio.",
-      );
+      showInferenceError(e, router);
     } finally {
       setIsLoading(false);
     }
@@ -249,10 +251,19 @@ export default function ChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <ConnectionBadge status="connected" />
-          <TouchableOpacity onPress={clearHistory} style={styles.clearButton}>
-            <Trash2 size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
+          <ConnectionBadge />
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => router.push("/settings")}
+              style={styles.clearButton}
+              accessibilityLabel="Open settings"
+            >
+              <SettingsIcon size={20} color={Colors.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={clearHistory} style={styles.clearButton}>
+              <Trash2 size={20} color={Colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
         <Text style={styles.headerTitle}>Medical Assistant</Text>
       </View>
@@ -343,6 +354,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: Spacing.sm,
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: Spacing.xs,
   },
   clearButton: {
     padding: Spacing.xs,

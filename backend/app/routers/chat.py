@@ -101,11 +101,32 @@ async def chat(request: ChatRequest):
 
 @router.get("/health")
 async def health_check():
-    """Check if the edge server and Ollama are operational."""
+    """
+    Lightweight liveness probe used by:
+      - the connect screen to verify the URL.
+      - the mobile inferenceRouter to pick edge vs on-device per request.
+
+    `capabilities` lets the mobile client know which routes the edge can
+    actually serve, so a stripped-down server (e.g. no Whisper installed)
+    can advertise that and have the client fall back to on-device STT.
+    """
     ollama_ok = await ollama_service.health_check()
+    capabilities: list[str] = []
+    if ollama_ok:
+        capabilities.extend(["chat", "symptoms", "vision"])
+    # Whisper runs locally in-process; if the import works we assume STT is
+    # serviceable. The mobile router treats a missing capability the same as
+    # a 5xx and will fall back to on-device whisper.rn automatically.
+    try:
+        import app.services.whisper_service  # noqa: F401
+
+        capabilities.append("stt")
+    except Exception:
+        pass
     return {
         "server": "ok",
         "ollama": "connected" if ollama_ok else "disconnected",
         "model": ollama_service.model,
         "privacy": "all-local",
+        "capabilities": capabilities,
     }

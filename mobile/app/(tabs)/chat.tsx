@@ -211,11 +211,11 @@ export default function ChatScreen() {
         const apiMessages = updatedMessages
           .filter((m) => m.id !== "welcome")
           .map((m) => ({ role: m.role, content: m.content }));
-          
+
         // Send the AI message using the detected language to keep the conversation natural
         const chatLang = result.detected_language || fallbackLang;
         const response = await sendChatMessage(apiMessages, chatLang);
-        
+
         const assistantMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant",

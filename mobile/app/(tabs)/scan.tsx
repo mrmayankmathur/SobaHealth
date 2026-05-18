@@ -20,6 +20,7 @@ import {
 import { extractDocument, analyzeFood } from "../../services/api";
 import { saveHealthRecord } from "../../services/database";
 import { awardXP } from "../../services/gamification";
+import { showInferenceError } from "@/services/errorMessages";
 
 export default function ScanScreen() {
   const router = useRouter();
@@ -91,6 +92,7 @@ export default function ScanScreen() {
       }
     } catch (error) {
       console.warn("Capture failed", error);
+      showInferenceError(error, router);
     } finally {
       setIsProcessing(false);
     }

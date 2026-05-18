@@ -1,83 +1,63 @@
-import * as FileSystem from "expo-file-system/legacy";
+/**
+ * Legacy entry point for on-device LLM helpers.
+ *
+ * Real implementation now lives in:
+ *   - `services/modelInstall.ts`     (picker / download / paths)
+ *   - `services/localInference.ts`   (LiteRT-LM wrapper, chat/symptoms/vision)
+ *   - `services/whisperLocal.ts`     (whisper.rn STT)
+ *   - `services/inferenceRouter.ts`  (edge vs device routing)
+ *
+ * This file just re-exports the surface that older call sites import so
+ * nothing breaks during the hybrid migration. New code should target the
+ * dedicated modules directly.
+ */
+import {
+  pickModelFile as pickModelFileGeneric,
+  downloadModel,
+  getInstalledPath,
+  ProgressCallback,
+} from "./modelInstall";
+import { localChat } from "./localInference";
 
-import { createLLM } from "react-native-litert-lm";
-
-const MODEL_URL =
-  "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm";
-const MODEL_FILE_NAME = "gemma-4-E4B-it.litertlm";
-
-let llmInstance: any = null;
-let downloadProgressCallback: ((progress: number) => void) | null = null;
-
-export function setDownloadProgressCallback(cb: (progress: number) => void) {
-  downloadProgressCallback = cb;
+/**
+ * Picks the on-device Gemma 4 E2B model file. Kept under its original
+ * name (`pickModelFile`) for backwards compatibility with the
+ * commit-9a97560 call site in `chat.tsx`.
+ */
+export async function pickModelFile(): Promise<boolean> {
+  try {
+    await pickModelFileGeneric("llm");
+    return true;
+  } catch (e: any) {
+    if (e?.message === "PICK_CANCELLED") return false;
+    console.warn("pickModelFile:", e);
+    return false;
+  }
 }
 
-export async function getLocalLLM() {
-  if (llmInstance) return llmInstance;
-
-  const modelPath = `${FileSystem.documentDirectory}${MODEL_FILE_NAME}`;
-  let fileInfo = await FileSystem.getInfoAsync(modelPath);
-
-  if (fileInfo.exists && fileInfo.size < 1000000) {
-    console.log("Found corrupted/partial download. Deleting...");
-    await FileSystem.deleteAsync(modelPath, { idempotent: true });
-    fileInfo = await FileSystem.getInfoAsync(modelPath);
-  }
-
-  if (!fileInfo.exists) {
-    console.log("Downloading Gemma 4 model to device...");
-    const downloadResumable = FileSystem.createDownloadResumable(
-      MODEL_URL,
-      modelPath,
-      {},
-      (downloadProgress) => {
-        const progress =
-          downloadProgress.totalBytesWritten /
-          downloadProgress.totalBytesExpectedToWrite;
-        if (downloadProgressCallback) {
-          downloadProgressCallback(progress);
-        }
-      },
-    );
-
-    try {
-      const result = await downloadResumable.downloadAsync();
-      if (!result || result.status !== 200) {
-        throw new Error("Failed to download model.");
-      }
-      console.log("Download complete:", result.uri);
-    } catch (e) {
-      console.error(e);
-      throw new Error("Error downloading the LLM model to local storage.");
-    }
-  }
-
-  console.log("Initializing LiteRT LLM from:", modelPath);
-  llmInstance = createLLM();
-  const rawPath = modelPath.replace(/^file:\/\//, "");
-  await llmInstance.loadModel(rawPath, {
-    backend: "gpu",
-    systemPrompt:
-      "You are a concise, helpful medical AI triage assistant. You provide short, empathetic advice.",
-  });
-  return llmInstance;
+/**
+ * Downloads the Gemma 4 E2B model from HuggingFace with progress.
+ * Returns the absolute on-disk path.
+ */
+export async function downloadLLM(
+  onProgress?: ProgressCallback,
+): Promise<string> {
+  return downloadModel("llm", onProgress);
 }
 
+/** Whether the LLM model file is currently installed on the device. */
+export async function llmInstalledPath(): Promise<string | null> {
+  return getInstalledPath("llm");
+}
+
+/**
+ * Direct on-device chat call. Most callers should prefer
+ * `inferenceRouter.routeChat` so the edge path is considered first.
+ */
 export async function generateLLMResponse(
   prompt: string,
-  resetHistory: boolean = false,
+  language: string = "en",
 ): Promise<string> {
-  const llm = await getLocalLLM();
-
-  if (resetHistory) {
-    llm.resetConversation();
-  }
-
-  try {
-    const fullResponse = await llm.sendMessage(prompt);
-    return fullResponse;
-  } catch (error) {
-    throw error;
-  }
+  const { response } = await localChat([{ role: "user", content: prompt }], language);
+  return response;
 }

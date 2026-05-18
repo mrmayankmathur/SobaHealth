@@ -32,10 +32,33 @@ export async function startRecording(): Promise<void> {
     playsInSilentModeIOS: true,
   });
 
-  // Use HIGH_QUALITY preset — produces .m4a which faster-whisper handles well
-  const { recording: newRecording } = await Audio.Recording.createAsync(
-    Audio.RecordingOptionsPresets.HIGH_QUALITY
-  );
+  // whisper.cpp requires 16kHz 16-bit mono WAV files!
+  const { recording: newRecording } = await Audio.Recording.createAsync({
+    isMeteringEnabled: false,
+    android: {
+      extension: '.wav',
+      outputFormat: Audio.AndroidOutputFormat.DEFAULT,
+      audioEncoder: Audio.AndroidAudioEncoder.DEFAULT,
+      sampleRate: 16000,
+      numberOfChannels: 1,
+      bitRate: 128000,
+    },
+    ios: {
+      extension: '.wav',
+      outputFormat: Audio.IOSOutputFormat.LINEARPCM,
+      audioQuality: Audio.IOSAudioQuality.MAX,
+      sampleRate: 16000,
+      numberOfChannels: 1,
+      bitRate: 256000,
+      linearPCMBitDepth: 16,
+      linearPCMIsBigEndian: false,
+      linearPCMIsFloat: false,
+    },
+    web: {
+      mimeType: 'audio/webm',
+      bitsPerSecond: 128000,
+    },
+  });
   recording = newRecording;
 }
 

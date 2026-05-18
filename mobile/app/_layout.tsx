@@ -13,7 +13,6 @@ import { initDatabase, getUserProfile } from "../services/database";
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
-  const [hasServer, setHasServer] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
 
   useEffect(() => {
@@ -28,9 +27,11 @@ export default function RootLayout() {
     } catch (e) {
       console.warn("Database init failed:", e);
     }
-
-    const url = await getServerUrl();
-    setHasServer(!!url);
+    // Server URL is no longer a gate to entering the app. The inference
+    // router decides per-request whether to use edge or on-device, and
+    // errors guide the user to /connect or /onboarding if something is
+    // missing. Touching getServerUrl here just warms the cache.
+    await getServerUrl();
     setIsReady(true);
   }
 
@@ -52,17 +53,15 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: Colors.background },
           animation: "fade",
         }}
+        initialRouteName={hasProfile ? "(tabs)" : "onboarding"}
       >
-        {!hasServer ? (
-          <Stack.Screen
-            name="connect"
-            options={{ presentation: "fullScreenModal" }}
-          />
-        ) : !hasProfile ? (
-          <Stack.Screen name="onboarding" />
-        ) : (
-          <Stack.Screen name="(tabs)" />
-        )}
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="connect"
+          options={{ presentation: "fullScreenModal" }}
+        />
+        <Stack.Screen name="settings" />
       </Stack>
     </>
   );

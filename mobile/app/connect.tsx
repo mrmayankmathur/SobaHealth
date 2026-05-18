@@ -27,6 +27,9 @@ import {
   Shadows,
 } from "../constants/theme";
 import { setServerUrl, testConnection, parseQrData } from "../services/api";
+import { setMode } from "../services/inferenceRouter";
+import { isInstalled } from "../services/modelInstall";
+import { getDeviceCapability } from "../services/deviceCapability";
 
 const { width } = Dimensions.get("window");
 
@@ -38,6 +41,15 @@ export default function ConnectScreen() {
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [showManual, setShowManual] = useState(false);
+  const [canSkipToDevice, setCanSkipToDevice] = useState<boolean>(false);
+
+  useEffect(() => {
+    (async () => {
+      const cap = await getDeviceCapability();
+      const llmReady = await isInstalled("llm");
+      setCanSkipToDevice(cap.tier !== "red" && llmReady);
+    })();
+  }, []);
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -95,7 +107,6 @@ export default function ConnectScreen() {
       Alert.alert("Error", "Please enter the server IP address");
       return;
     }
-    // Add http:// and port if not present
     if (!ip.startsWith("http")) {
       ip = `http://${ip}`;
     }
@@ -103,6 +114,11 @@ export default function ConnectScreen() {
       ip = `${ip}:8000`;
     }
     handleConnect(ip);
+  }
+
+  async function handleSkipToDevice() {
+    await setMode("device");
+    router.replace("/(tabs)");
   }
 
   // QR code scanning would go here — for now we use manual IP entry
@@ -179,10 +195,25 @@ export default function ConnectScreen() {
             </TouchableOpacity>
           </View>
           <Text style={styles.hint}>
-            💡 Run the server on your laptop, then enter its IP here.{"\n"}
+            Run the server on your laptop, then enter its IP here.{"\n"}
             Find your IP: run `ifconfig` or check WiFi settings.
           </Text>
         </View>
+
+        {canSkipToDevice && (
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={handleSkipToDevice}
+          >
+            <Text style={styles.skipButtonText}>
+              Skip — run on-device only
+            </Text>
+            <Text style={styles.skipButtonHint}>
+              Use the Gemma 4 E2B model installed on this phone. You can switch
+              back to the edge server any time from settings.
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Privacy badge */}
         <View style={styles.privacyBadge}>
@@ -331,5 +362,26 @@ const styles = StyleSheet.create({
     ...Typography.micro,
     color: Colors.success,
     fontWeight: "500",
+  },
+  skipButton: {
+    marginTop: Spacing.lg,
+    padding: Spacing.base,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    width: "100%",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  skipButtonText: {
+    ...Typography.bodyPrimary,
+    color: Colors.primary,
+    fontWeight: "700",
+  },
+  skipButtonHint: {
+    ...Typography.micro,
+    color: Colors.textSecondary,
+    textAlign: "center",
   },
 });

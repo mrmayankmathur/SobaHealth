@@ -9,14 +9,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-} from 'react-native';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/theme';
-import { checkSymptoms } from '../../services/api';
-import { ConnectionBadge } from '../../components/ConnectionBadge';
-import { ThinkingBlock } from '../../components/ThinkingBlock';
-import { Send, Activity } from 'lucide-react-native';
-import { describeInferenceError } from '../../services/errorMessages';
-import { useRouter } from 'expo-router';
+} from "react-native";
+import {
+  Colors,
+  Spacing,
+  Typography,
+  BorderRadius,
+  Shadows,
+} from "../../constants/theme";
+import { checkSymptoms } from "../../services/api";
+import { ConnectionBadge } from "../../components/ConnectionBadge";
+import { ThinkingBlock } from "../../components/ThinkingBlock";
+import { Send, Activity } from "lucide-react-native";
+import { describeInferenceError } from "../../services/errorMessages";
+import { awardXP } from "../../services/gamification";
+import { useRouter } from "expo-router";
 
 interface SymptomMessage {
   id: string;
@@ -82,8 +89,8 @@ export default function SymptomsScreen() {
       const friendly = describeInferenceError(e);
       const errMsg: SymptomMessage = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `${friendly.title}: ${friendly.message}`,
+        role: "assistant",
+        content: `⚠️ Error: ${e.message || "Could not process symptoms"}`,
       };
       setMessages((prev) => [...prev, errMsg]);
       if (friendly.cta) {

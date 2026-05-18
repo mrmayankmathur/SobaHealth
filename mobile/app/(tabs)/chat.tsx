@@ -22,6 +22,7 @@ import {
 import { sendChatMessage, transcribeAudio } from "../../services/api";
 import { startRecording, stopRecording } from "../../services/recorder";
 import { showInferenceError } from "../../services/errorMessages";
+import { awardXP } from "../../services/gamification";
 import { useRouter } from "expo-router";
 import * as SQLite from "expo-sqlite";
 import { ConnectionBadge } from "../../components/ConnectionBadge";
@@ -173,10 +174,11 @@ export default function ChatScreen() {
 
       const result = await transcribeAudio(audioUri, "en");
       const transcript = (result.transcript || "").trim();
-      const isBlank = !transcript || 
-                      transcript.toUpperCase() === "[BLANK_AUDIO]" || 
-                      transcript.toLowerCase().includes("blank_audio") ||
-                      transcript === "...";
+      const isBlank =
+        !transcript ||
+        transcript.toUpperCase() === "[BLANK_AUDIO]" ||
+        transcript.toLowerCase().includes("blank_audio") ||
+        transcript === "...";
 
       if (transcript && !isBlank) {
         const userMsg: ChatMessage = {
@@ -209,6 +211,7 @@ export default function ChatScreen() {
           () => flatListRef.current?.scrollToEnd({ animated: true }),
           100,
         );
+        awardXP(10, "chat");
       } else {
         Alert.alert(
           "No Speech Detected",

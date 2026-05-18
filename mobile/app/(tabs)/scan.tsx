@@ -6,15 +6,21 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
-} from 'react-native';
-import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
-import { useRouter } from 'expo-router';
-import { X, Zap, ZapOff, Circle } from 'lucide-react-native';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/theme';
-import { extractDocument, analyzeFood } from '../../services/api';
-import { saveHealthRecord } from '../../services/database';
-import { showInferenceError } from '../../services/errorMessages';
-import { awardXP } from '../../services/gamification';
+} from "react-native";
+import { Camera, CameraView, useCameraPermissions } from "expo-camera";
+import { useRouter } from "expo-router";
+import { X, Zap, ZapOff, Circle } from "lucide-react-native";
+import {
+  Colors,
+  Spacing,
+  Typography,
+  BorderRadius,
+  Shadows,
+} from "../../constants/theme";
+import { extractDocument, analyzeFood } from "../../services/api";
+import { saveHealthRecord } from "../../services/database";
+import { awardXP } from "../../services/gamification";
+import { showInferenceError } from "@/services/errorMessages";
 
 export default function ScanScreen() {
   const router = useRouter();

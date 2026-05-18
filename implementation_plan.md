@@ -115,3 +115,11 @@ CREATE TABLE health_trends (
 19. 🚧 Record demo video (Next Step)
 20. 🚧 Write Kaggle writeup
 21. 🚧 Final GitHub push & submit
+
+## Phase 5 — Model Optimization & Fine-Tuning (Production Path)
+
+22. 📋 **Dataset Curation:** Aggregate MIMIC-IV-Ext-Instr (clinical notes), n2c2 (structured concepts), and TeleQnA (dialogue).
+23. 📋 **LoRA Fine-Tuning:** Use `unsloth` for 2x faster training on Gemma 4 E2B-it to improve medical instruction following.
+24. 📋 **Weight Merging:** Merge LoRA adapters into the base model to create a standalone clinical checkpoint.
+25. 📋 **LiteRT Conversion:** Use `ai-edge-torch` to convert the merged model into `.litertlm` format for optimized CPU-based on-device execution.
+26. 📋 **Advanced Quantization:** Apply TurboQuant-H to maintain clinical accuracy while reducing memory footprint to < 2GB.

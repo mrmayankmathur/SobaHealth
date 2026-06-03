@@ -60,7 +60,12 @@
         {
           "android": {
             "minSdkVersion": 26,
-            "kotlinVersion": "2.1.0"
+            "kotlinVersion": "2.1.0",
+            "packagingOptions": {
+              "pickFirst": [
+                "META-INF/kotlin-project-structure-metadata.json"
+              ]
+            }
           }
         }
       ]

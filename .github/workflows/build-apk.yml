@@ -15,18 +15,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x # Fixed: React Native 0.81 requires Node 20+
           cache: 'npm'
           cache-dependency-path: 'mobile/package-lock.json'
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4 # Upgraded Java action
         with:
           distribution: 'zulu'
           java-version: '17'
 
       - name: Setup EAS CLI
-        run: npm install -g eas-cli
+        run: npm install -g eas-cli@latest # Forces GitHub to grab the very latest EAS version
 
       - name: Install Project Dependencies
         working-directory: ./mobile
